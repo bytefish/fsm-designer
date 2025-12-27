@@ -39,12 +39,11 @@ interface GraphData {
   imports: [CommonModule, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col h-screen bg-slate-50 font-sans selection:bg-blue-100 text-slate-800 select-none overflow-hidden">
-
+   <div class="flex flex-col fixed inset-0 h-[100dvh] w-screen bg-slate-50 font-sans selection:bg-blue-100 text-slate-800 select-none overflow-hidden touch-manipulation">
       <!-- Toolbar -->
       <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 flex items-center justify-between shadow-sm z-[100] shrink-0 h-16 overflow-x-auto no-scrollbar">
         <div class="flex items-center gap-3 md:gap-4 min-w-max">
-          <h1 class="text-lg md:text-xl font-bold text-indigo-700 tracking-tight mr-1 md:mr-2">fsm-designer</h1>
+          <h1 class="text-lg md:text-xl font-bold text-indigo-700 tracking-tight mr-1 md:mr-2"></h1>
 
           <!-- State Actions Group -->
           <div class="flex items-center gap-2">
@@ -87,11 +86,11 @@ interface GraphData {
           </div>
 
           <!-- Zoom Controls -->
-          <div class="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 gap-1 h-9">
-            <button (click)="zoomOut()" class="w-8 h-full flex items-center justify-center hover:bg-white rounded transition-colors" title="Zoom Out">-</button>
-            <span class="text-[10px] font-mono w-10 text-center">{{ zoomPercent() }}%</span>
-            <button (click)="zoomIn()" class="w-8 h-full flex items-center justify-center hover:bg-white rounded transition-colors" title="Zoom In">+</button>
-          </div>
+             <div class="flex items-center bg-white p-1 rounded-xl border-2 border-slate-200 gap-1 h-10 md:h-12 shadow-sm">
+                <button (click)="zoomOut()" class="w-8 md:w-10 h-full flex items-center justify-center hover:bg-slate-50 rounded-lg font-bold text-slate-600 text-lg">-</button>
+                <span class="text-xs font-black w-8 md:w-12 text-center text-slate-800">{{ zoomPercent() }}%</span>
+                <button (click)="zoomIn()" class="w-8 md:w-10 h-full flex items-center justify-center hover:bg-slate-50 rounded-lg font-bold text-slate-600 text-lg">+</button>
+             </div>
         </div>
 
         <div class="flex gap-2 items-center ml-4">
