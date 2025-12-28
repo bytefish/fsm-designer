@@ -348,16 +348,31 @@ interface GraphData {
                  }
 
                 <!-- Link Properties -->
-                 @if (selectedLink(); as link) {
-                  <div class="space-y-6 animate-fadeIn">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-700 mb-1">Label</label>
-                        <input type="text" [(ngModel)]="link.label" (input)="updateData()"
-                               class="w-full px-3 py-4 md:py-2 bg-white border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                               placeholder="Event name">
+                @if (selectedLink(); as link) {
+                    <div class="space-y-6 animate-fadeIn">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Label</label>
+                            <input type="text" [(ngModel)]="link.label" (input)="updateData()"
+                                class="w-full px-3 py-4 md:py-2 bg-white border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                placeholder="Event name">
+                        </div>
+
+
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                            <!-- Helper for Straight Lines -->
+                             @if (!isSelfLoop(link)) {
+                        <label class="flex items-center gap-3 p-3 rounded bg-slate-50 border border-slate-100 hover:bg-slate-100 cursor-pointer">
+                            <input type="checkbox"
+                              [checked]="isLinkStraight(link)"
+                              (change)="toggleLinkStraight(link, $event)"
+                              class="w-5 h-5 text-red-600 rounded border-slate-300 focus:ring-red-500">
+                            <span class="text-sm font-medium text-slate-700">Straight Line</span>
+                        </label>
+                             }
+
+                            </div>
                     </div>
-                  </div>
-                  }
+                }
 
             </div>
 
@@ -550,6 +565,7 @@ export class App {
     this.handleInteractionMove(event.clientX, event.clientY);
   }
 
+
   private handleInteractionDown(clientX: number, clientY: number) {
     this.cachedCanvasRect = this.canvasContainer.nativeElement.getBoundingClientRect();
     const wp = this.getWorldPointFromClient(clientX, clientY);
@@ -574,8 +590,32 @@ export class App {
 
     if (this.isDraggingNode && this.selectedNode()) {
         const node = this.selectedNode()!;
-        node.x = wp.x - this.nodeGrabOffset.x;
-        node.y = wp.y - this.nodeGrabOffset.y;
+
+        // Calculate new position
+        const newX = wp.x - this.nodeGrabOffset.x;
+        const newY = wp.y - this.nodeGrabOffset.y;
+
+        // Calculate delta
+        const dx = newX - node.x;
+        const dy = newY - node.y;
+
+        // Apply new position
+        node.x = newX;
+        node.y = newY;
+
+        // Update connected links
+        this.links().forEach(link => {
+            if (link.sourceId === node.id && link.targetId === node.id) {
+                 // Self-loop: Move control point exactly with node to maintain shape
+                 link.controlPoint.x += dx;
+                 link.controlPoint.y += dy;
+            } else if (link.sourceId === node.id || link.targetId === node.id) {
+                 // Normal link: Move control point by 50% to maintain nice curvature
+                 link.controlPoint.x += dx * 0.5;
+                 link.controlPoint.y += dy * 0.5;
+            }
+        });
+
         this.updateData();
     }
 
@@ -665,9 +705,6 @@ export class App {
       this.selectedLink.set(null);
       this.isDraggingNode = true;
       this.nodeGrabOffset = { x: wp.x - node.x, y: wp.y - node.y };
-
-      // FIX: Removed auto-open sidebar logic here
-      // Manual open via button or double click instead
     }
   }
 
@@ -722,6 +759,22 @@ export class App {
     return Math.round(Math.sqrt(Math.pow(link.controlPoint.x - (s.x + t.x)/2, 2) + Math.pow(link.controlPoint.y - (s.y + t.y)/2, 2)));
   }
 
+  isLinkStraight(link: FsmLink): boolean {
+    return this.getSliderValue() < 5; // Tolerance
+  }
+
+  toggleLinkStraight(link: FsmLink, event: any) {
+    if (event.target.checked) {
+        const s = this.nodes().find(n => n.id === link.sourceId);
+        const t = this.nodes().find(n => n.id === link.targetId);
+        if (s && t) {
+            link.controlPoint.x = (s.x + t.x) / 2;
+            link.controlPoint.y = (s.y + t.y) / 2;
+            this.updateData();
+        }
+    }
+  }
+
   onSliderChange(event: any) {
     const link = this.selectedLink(), val = Number(event.target.value); if (!link) return;
     if (this.isSelfLoop(link)) link.spread = val * (Math.PI/180);
@@ -738,8 +791,31 @@ export class App {
   }
 
   createLink(sId: string, tId: string) {
-    const s = this.nodes().find(n => n.id === sId); if (!s) return;
-    this.links.update(ls => [...ls, { id: crypto.randomUUID(), sourceId: sId, targetId: tId, label: 'Event', controlPoint: { x: s.x, y: s.y - s.size * 1.5 }, spread: sId === tId ? Math.PI/4 : undefined }]);
+    const s = this.nodes().find(n => n.id === sId);
+    const t = this.nodes().find(n => n.id === tId);
+    if (!s || !t) return;
+
+    let controlPoint: Point;
+    let spread: number | undefined;
+
+    if (sId === tId) {
+        // Self-loop: Standard curve upwards
+        controlPoint = { x: s.x, y: s.y - s.size * 1.5 };
+        spread = Math.PI / 4;
+    } else {
+        // Connection between two nodes: Straight line default (Midpoint)
+        controlPoint = { x: (s.x + t.x) / 2, y: (s.y + t.y) / 2 };
+        spread = undefined;
+    }
+
+    this.links.update(ls => [...ls, {
+        id: crypto.randomUUID(),
+        sourceId: sId,
+        targetId: tId,
+        label: 'Event',
+        controlPoint: controlPoint,
+        spread: spread
+    }]);
   }
 
   getLinkPath(link: FsmLink): string {
