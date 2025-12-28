@@ -95,13 +95,6 @@ interface GraphData {
             </button>
           </div>
 
-          <!-- Zoom Controls (White Box Style) -->
-          <div class="flex items-center bg-white p-1 rounded-lg border-1 border-slate-200 gap-1 h-9">
-            <button (click)="zoomOut()" class="w-8 h-full flex items-center justify-center hover:bg-slate-50 rounded-md font-bold text-slate-600 text-lg leading-none">-</button>
-            <span class="text-[10px] font-black w-10 text-center text-slate-800">{{ zoomPercent() }}%</span>
-            <button (click)="zoomIn()" class="w-8 h-full flex items-center justify-center hover:bg-slate-50 rounded-md font-bold text-slate-600 text-lg leading-none">+</button>
-          </div>
-
            <div class="flex items-center gap-1">
               <button (click)="resetView()" class="btn-tool btn-outline-amber flex items-center gap-2">
                 <span class="text-lg leading-none">🏠</span> <span class="hidden sm:inline">Center</span>
@@ -253,11 +246,19 @@ interface GraphData {
                 (touchstart)="onNodeMouseDown(node, $event)"
                 (dblclick)="onNodeDoubleClick(node, $event)">
 
-            <div class="text-[11px] font-bold text-center break-words overflow-hidden px-2 py-1 max-w-full leading-tight pointer-events-none">
-                {{ node.label }}
-            </div>
-            </div>
+              <div class="text-[11px] font-bold text-center break-words overflow-hidden px-2 py-1 max-w-full leading-tight pointer-events-none">
+                  {{ node.label }}
+              </div>
+              </div>
              }
+
+        <!-- Floating Zoom Controls (Bottom Right) -->
+        <div class="absolute bottom-6 right-6 flex flex-col bg-white/90 backdrop-blur-sm border-2 border-slate-200 shadow-xl rounded-xl z-[80] overflow-hidden">
+            <button (click)="zoomIn()" class="w-10 h-10 flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xl border-b border-slate-100 transition-colors" title="Zoom In">+</button>
+            <button (click)="resetZoom()" class="w-10 h-10 flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 text-[10px] font-mono font-bold text-slate-500 border-b border-slate-100 transition-colors" title="Reset Zoom">{{ zoomPercent() }}%</button>
+            <button (click)="zoomOut()" class="w-10 h-10 flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xl transition-colors" title="Zoom Out">-</button>
+        </div>
+
         </div>
 
         <!-- Mobile Floating Action Bar (Bottom Center) -->
@@ -444,6 +445,9 @@ export class App {
   historyFuture: GraphData[] = [];
   tempSnapshot: GraphData | null = null; // Used for drag/edit operations
 
+  // --- Control Key Mode Toggle ---
+  previousMode: 'select' | 'connect' | null = null;
+
   // --- Interaction States ---
   isDraggingNode = false;
   isDraggingLineBody = false;
@@ -542,6 +546,14 @@ export class App {
   handleKeyDown(event: KeyboardEvent) {
     const target = event.target as HTMLElement;
 
+    // --- Ctrl Key Mode Toggle (Press) ---
+    if (event.key === 'Control' && !this.previousMode) {
+         if (this.interactionMode() !== 'connect') {
+             this.previousMode = this.interactionMode();
+             this.setMode('connect');
+         }
+    }
+
     // Handle Undo/Redo (Ctrl+Z, Ctrl+Y or Ctrl+Shift+Z)
     if ((event.ctrlKey || event.metaKey) && !['INPUT', 'TEXTAREA'].includes(target.tagName)) {
         if (event.key === 'z') {
@@ -560,6 +572,15 @@ export class App {
     if (event.key === 'Delete' || event.key === 'Backspace') this.deleteSelected();
   }
 
+  @HostListener('window:keyup', ['$event'])
+  handleKeyUp(event: KeyboardEvent) {
+     // --- Ctrl Key Mode Toggle (Release) ---
+     if (event.key === 'Control' && this.previousMode) {
+         this.setMode(this.previousMode);
+         this.previousMode = null;
+     }
+  }
+
   onWheel(event: WheelEvent) {
     event.preventDefault();
     if (event.deltaY < 0) this.zoomIn(); else this.zoomOut();
@@ -567,6 +588,7 @@ export class App {
 
   zoomIn() { this.zoomLevel.update(z => Math.min(5, z * 1.05)); }
   zoomOut() { this.zoomLevel.update(z => Math.max(0.05, z / 1.05)); }
+  resetZoom() { this.zoomLevel.set(1.0); }
   resetView() { this.viewOffset.set({ x: 0, y: 0 }); this.zoomLevel.set(1.0); }
 
   saveToFile() {
