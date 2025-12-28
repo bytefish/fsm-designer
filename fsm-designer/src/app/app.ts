@@ -392,7 +392,7 @@ interface GraphData {
             </div>
 
             <!-- JSON Data (Hidden on small mobile) -->
-            <div class="border-t border-slate-200 bg-slate-50 p-4 shrink-0 hidden sm:block">
+            <div class="border-t border-slate-200 bg-slate-50 p-4 shrink-0 hidden 2xl:block">
                 <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Raw Data (JSON)</h3>
                 <textarea [ngModel]="jsonString()" (ngModelChange)="onJsonManualChange($event)"
                           class="w-full h-24 p-2 text-[9px] font-mono border border-slate-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 mb-1 bg-white"
@@ -533,7 +533,6 @@ export class App {
     this.resetView();
   }
 
-
   onJsonManualChange(val: string) {
     this.recordSnapshot();
     try {
@@ -544,10 +543,6 @@ export class App {
             this.commitSnapshot();
         }
     } catch(e) {}
-  }
-
-  private ensureNodeExists(id: string, map: Map<string, FsmNode>) {
-      if (!map.has(id)) map.set(id, { id: crypto.randomUUID(), x: 0, y: 0, size: 100, label: id, isStart: false, isEnd: false });
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -909,8 +904,6 @@ export class App {
         const midY = 0.25 * s.y + 0.5 * link.controlPoint.y + 0.25 * t.y;
         this.linkGrabOffset = { x: midX - wp.x, y: midY - wp.y };
     }
-
-    // FIX: Removed auto-open sidebar logic here
   }
 
   // Double click handlers for direct edit access
