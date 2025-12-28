@@ -108,6 +108,20 @@ interface GraphData {
         <button (click)="resetView()" class="btn-tool btn-outline-amber flex items-center gap-2">
             <span class="text-lg leading-none">🏠</span> <span class="hidden sm:inline">Center</span>
           </button>
+
+                    <!-- Undo / Redo Group -->
+          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 h-9 mr-2">
+            <button (click)="undo()" [disabled]="historyPast.length === 0"
+                    class="w-8 h-full flex items-center justify-center rounded hover:bg-white transition-colors text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent" title="Undo (Ctrl+Z)">
+              ↩️
+            </button>
+            <div class="w-px h-4 bg-slate-300"></div>
+            <button (click)="redo()" [disabled]="historyFuture.length === 0"
+                    class="w-8 h-full flex items-center justify-center rounded hover:bg-white transition-colors text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent" title="Redo (Ctrl+Y)">
+              ↪️
+            </button>
+          </div>
+
         </div>
       </header>
 
@@ -317,7 +331,7 @@ interface GraphData {
                 <div class="space-y-4 animate-fadeIn">
                     <div>
                         <label class="block text-xs font-medium text-slate-700 mb-1">Label</label>
-                        <textarea [(ngModel)]="node.label" (input)="updateData()"
+                        <textarea [(ngModel)]="node.label" (input)="updateData()" (focus)="recordSnapshot()" (change)="commitSnapshot()"
                                class="w-full h-20 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
                                placeholder="State name"></textarea>
                     </div>
@@ -327,19 +341,19 @@ interface GraphData {
                             <label class="block text-xs font-medium text-slate-700">Size</label>
                             <span class="text-xs font-mono text-slate-500">{{node.size}}px</span>
                         </div>
-                        <input type="range" min="60" max="250" [(ngModel)]="node.size" (input)="updateData()"
+                        <input type="range" min="60" max="250" [(ngModel)]="node.size" (input)="updateData()" (focus)="recordSnapshot()" (change)="commitSnapshot()"
                                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
                     </div>
 
                     <div class="space-y-3 pt-2">
                         <label class="flex items-center gap-3 p-3 rounded bg-slate-50 border border-slate-100 hover:bg-slate-100 cursor-pointer">
-                            <input type="checkbox" [(ngModel)]="node.isStart" (change)="updateData()"
+                            <input type="checkbox" [(ngModel)]="node.isStart" (change)="updateData(); commitSnapshot()" (mousedown)="recordSnapshot()"
                                    class="w-5 h-5 text-green-600 rounded border-slate-300 focus:ring-green-500">
                             <span class="text-sm font-medium text-slate-700">Initial State</span>
                         </label>
 
                         <label class="flex items-center gap-3 p-3 rounded bg-slate-50 border border-slate-100 hover:bg-slate-100 cursor-pointer">
-                            <input type="checkbox" [(ngModel)]="node.isEnd" (change)="updateData()"
+                            <input type="checkbox" [(ngModel)]="node.isEnd" (change)="updateData(); commitSnapshot()" (mousedown)="recordSnapshot()"
                                    class="w-5 h-5 text-red-600 rounded border-slate-300 focus:ring-red-500">
                             <span class="text-sm font-medium text-slate-700">Final State</span>
                         </label>
@@ -352,7 +366,7 @@ interface GraphData {
                     <div class="space-y-6 animate-fadeIn">
                         <div>
                             <label class="block text-xs font-medium text-slate-700 mb-1">Label</label>
-                            <input type="text" [(ngModel)]="link.label" (input)="updateData()"
+                            <input type="text" [(ngModel)]="link.label" (input)="updateData()" (focus)="recordSnapshot()" (change)="commitSnapshot()"
                                 class="w-full px-3 py-4 md:py-2 bg-white border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                 placeholder="Event name">
                         </div>
@@ -364,7 +378,7 @@ interface GraphData {
                         <label class="flex items-center gap-3 p-3 rounded bg-slate-50 border border-slate-100 hover:bg-slate-100 cursor-pointer">
                             <input type="checkbox"
                               [checked]="isLinkStraight(link)"
-                              (change)="toggleLinkStraight(link, $event)"
+                              (change)="recordSnapshot(); toggleLinkStraight(link, $event); commitSnapshot()"
                               class="w-5 h-5 text-red-600 rounded border-slate-300 focus:ring-red-500">
                             <span class="text-sm font-medium text-slate-700">Straight Line</span>
                         </label>
@@ -424,6 +438,11 @@ export class App {
   zoomPercent = computed(() => Math.round(this.zoomLevel() * 100));
   jsonString = computed(() => JSON.stringify({ nodes: this.nodes(), links: this.links() }, null, 2));
 
+  // --- History ---
+  historyPast: GraphData[] = [];
+  historyFuture: GraphData[] = [];
+  tempSnapshot: GraphData | null = null; // Used for drag/edit operations
+
   // --- Interaction States ---
   isDraggingNode = false;
   isDraggingLineBody = false;
@@ -458,11 +477,13 @@ export class App {
   }
 
   onJsonManualChange(val: string) {
+    this.recordSnapshot();
     try {
         const data: GraphData = JSON.parse(val);
         if (data.nodes && data.links) {
             this.nodes.set(data.nodes);
             this.links.set(data.links);
+            this.commitSnapshot();
         }
     } catch(e) {}
   }
@@ -503,6 +524,21 @@ export class App {
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
     const target = event.target as HTMLElement;
+
+    // Handle Undo/Redo (Ctrl+Z, Ctrl+Y or Ctrl+Shift+Z)
+    if ((event.ctrlKey || event.metaKey) && !['INPUT', 'TEXTAREA'].includes(target.tagName)) {
+        if (event.key === 'z') {
+            event.preventDefault();
+            this.undo();
+            return;
+        }
+        if (event.key === 'y' || (event.shiftKey && event.key === 'Z')) {
+            event.preventDefault();
+            this.redo();
+            return;
+        }
+    }
+
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
     if (event.key === 'Delete' || event.key === 'Backspace') this.deleteSelected();
   }
@@ -539,6 +575,52 @@ export class App {
     reader.readAsText(file);
     event.target.value = '';
   }
+
+  // --- History Management ---
+
+  getCurrentState(): GraphData {
+      return JSON.parse(JSON.stringify({ nodes: this.nodes(), links: this.links() }));
+  }
+
+  pushState(state: GraphData) {
+      this.historyPast.push(state);
+      this.historyFuture = []; // Clear redo stack on new action
+      if (this.historyPast.length > 50) this.historyPast.shift(); // Limit history
+  }
+
+  undo() {
+      if (this.historyPast.length === 0) return;
+      const current = this.getCurrentState();
+      this.historyFuture.push(current);
+      const previous = this.historyPast.pop()!;
+      this.nodes.set(previous.nodes);
+      this.links.set(previous.links);
+  }
+
+  redo() {
+      if (this.historyFuture.length === 0) return;
+      const current = this.getCurrentState();
+      this.historyPast.push(current);
+      const next = this.historyFuture.pop()!;
+      this.nodes.set(next.nodes);
+      this.links.set(next.links);
+  }
+
+  // Called before start of a discrete action or drag
+  recordSnapshot() {
+      this.tempSnapshot = this.getCurrentState();
+  }
+
+  // Called after end of action. Checks if changed, then saves.
+  commitSnapshot() {
+      if (!this.tempSnapshot) return;
+      const current = this.getCurrentState();
+      if (JSON.stringify(this.tempSnapshot) !== JSON.stringify(current)) {
+          this.pushState(this.tempSnapshot);
+      }
+      this.tempSnapshot = null;
+  }
+
 
   // --- Interaction Logic ---
 
@@ -647,6 +729,12 @@ export class App {
         const targetNode = this.nodes().find(n => Math.sqrt(Math.pow(n.x - wp.x, 2) + Math.pow(n.y - wp.y, 2)) < (n.size / 2 + 10));
         if (targetNode) this.createLink(this.connectSourceId, targetNode.id);
     }
+
+    // Commit History if something was dragged or connected
+    if (this.isDraggingNode || this.isDraggingLineBody || this.connectSourceId) {
+        this.commitSnapshot();
+    }
+
     this.isDraggingNode = false;
     this.isDraggingLineBody = false;
     this.isPanning = false;
@@ -691,6 +779,9 @@ export class App {
 
   onNodeMouseDown(node: FsmNode, event: any) {
     event.preventDefault(); event.stopPropagation();
+
+    this.recordSnapshot(); // Start drag history snapshot
+
     this.cachedCanvasRect = this.canvasContainer.nativeElement.getBoundingClientRect();
 
     const clientX = event.touches ? event.touches[0].clientX : event.clientX;
@@ -710,6 +801,9 @@ export class App {
 
   startDragLine(link: FsmLink, event: any) {
     event.preventDefault(); event.stopPropagation();
+
+    this.recordSnapshot(); // Start drag history snapshot
+
     this.cachedCanvasRect = this.canvasContainer.nativeElement.getBoundingClientRect();
 
     const clientX = event.touches ? event.touches[0].clientX : event.clientX;
