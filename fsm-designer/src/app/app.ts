@@ -95,9 +95,6 @@ interface GraphData {
             </button>
           </div>
 
-          <!-- View Action -->
-
-
           <!-- Zoom Controls (White Box Style) -->
           <div class="flex items-center bg-white p-1 rounded-lg border-1 border-slate-200 gap-1 h-9">
             <button (click)="zoomOut()" class="w-8 h-full flex items-center justify-center hover:bg-slate-50 rounded-md font-bold text-slate-600 text-lg leading-none">-</button>
@@ -105,11 +102,13 @@ interface GraphData {
             <button (click)="zoomIn()" class="w-8 h-full flex items-center justify-center hover:bg-slate-50 rounded-md font-bold text-slate-600 text-lg leading-none">+</button>
           </div>
 
-        <button (click)="resetView()" class="btn-tool btn-outline-amber flex items-center gap-2">
-            <span class="text-lg leading-none">🏠</span> <span class="hidden sm:inline">Center</span>
-          </button>
+           <div class="flex items-center gap-1">
+              <button (click)="resetView()" class="btn-tool btn-outline-amber flex items-center gap-2">
+                <span class="text-lg leading-none">🏠</span> <span class="hidden sm:inline">Center</span>
+              </button>
+            </div>
 
-                    <!-- Undo / Redo Group -->
+          <!-- Undo / Redo Group -->
           <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 h-9 mr-2">
             <button (click)="undo()" [disabled]="historyPast.length === 0"
                     class="w-8 h-full flex items-center justify-center rounded hover:bg-white transition-colors text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent" title="Undo (Ctrl+Z)">
@@ -307,11 +306,8 @@ interface GraphData {
                             Load JSON
                         </button>
                     </div>
-                    <input #fileInput type="file" (change)="onFileSelected($event)" class="hidden" accept=".json">
 
-                    <button (click)="showDotModal.set(true)" class="w-full mt-2 px-3 py-2 bg-white border border-indigo-200 text-indigo-700 text-xs font-bold rounded hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2">
-                        <span>📥</span> DOT Import
-                    </button>
+                    <input #fileInput type="file" (change)="onFileSelected($event)" class="hidden" accept=".json">
 
                     <div class="grid grid-cols-2 gap-2 mt-2">
                         <button (click)="exportFullSvg()" class="px-3 py-2 bg-slate-800 text-white text-[10px] font-bold rounded hover:bg-slate-900 transition-colors shadow-sm">
@@ -435,9 +431,6 @@ export class App {
   zoomLevel = signal<number>(1.0);
   isSidebarOpen = signal<boolean>(false);
 
-  showDotModal = signal<boolean>(false);
-  dotInput = signal<string>("");
-
   zoomPercent = computed(() => Math.round(this.zoomLevel() * 100));
   jsonString = computed(() => JSON.stringify({ nodes: this.nodes(), links: this.links() }, null, 2));
 
@@ -514,6 +507,7 @@ export class App {
     this.links.set([]);
     this.selectedNode.set(null);
     this.selectedLink.set(null);
+    this.isSidebarOpen.set(false);
 
     // Add default template
     this.addNodeAt(200, 300, 'Initial\nState', true, false);
@@ -533,35 +527,6 @@ export class App {
             this.commitSnapshot();
         }
     } catch(e) {}
-  }
-
-  importDot() {
-    const dot = this.dotInput();
-    if (!dot.trim()) return;
-    const nodesMap = new Map<string, FsmNode>();
-    const newLinks: FsmLink[] = [];
-    const cleanDot = dot.replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "");
-    const edgeRegex = /(\w+)\s*->\s*(\w+)(?:\s*\[([^\]]+)\])?/g;
-    let match;
-    while ((match = edgeRegex.exec(cleanDot)) !== null) {
-        const srcId = match[1], trgId = match[2], attrs = match[3] || "";
-        const labelMatch = attrs.match(/label\s*=\s*(?:"([^"]*)"|(\w+))/);
-        const label = labelMatch ? (labelMatch[1] || labelMatch[2]) : "Event";
-        this.ensureNodeExists(srcId, nodesMap);
-        this.ensureNodeExists(trgId, nodesMap);
-        const srcNode = nodesMap.get(srcId)!, trgNode = nodesMap.get(trgId)!;
-        newLinks.push({
-            id: crypto.randomUUID(), sourceId: srcNode.id, targetId: trgNode.id, label: label,
-            controlPoint: { x: (srcNode.x + trgNode.x)/2, y: (srcNode.y + trgNode.y)/2 - 30 }
-        });
-    }
-    const nodesList = Array.from(nodesMap.values());
-    const radius = Math.max(300, nodesList.length * 40);
-    nodesList.forEach((n, i) => {
-        const angle = (i / nodesList.length) * 2 * Math.PI;
-        n.x = 400 + Math.cos(angle) * radius; n.y = 300 + Math.sin(angle) * radius;
-    });
-    this.nodes.set(nodesList); this.links.set(newLinks); this.showDotModal.set(false); this.dotInput.set(""); this.updateData();
   }
 
   private ensureNodeExists(id: string, map: Map<string, FsmNode>) {
@@ -702,6 +667,7 @@ export class App {
     // If user clicked empty space
     this.selectedNode.set(null);
     this.selectedLink.set(null);
+    this.isSidebarOpen.set(false);
     this.isPanning = true;
     this.panLastPos = { x: clientX, y: clientY };
   }
@@ -822,12 +788,14 @@ export class App {
       this.links.set(this.links().filter(l => l.id !== link.id));
       this.selectedLink.set(null);
     }
+
+    this.isSidebarOpen.set(false);
   }
 
   onNodeMouseDown(node: FsmNode, event: any) {
     event.preventDefault(); event.stopPropagation();
-
-    this.recordSnapshot(); // Start drag history snapshot
+    this.recordSnapshot();
+    this.isSidebarOpen.set(false);
 
     this.cachedCanvasRect = this.canvasContainer.nativeElement.getBoundingClientRect();
 
@@ -850,6 +818,7 @@ export class App {
     event.preventDefault(); event.stopPropagation();
 
     this.recordSnapshot(); // Start drag history snapshot
+    this.isSidebarOpen.set(false);
 
     this.cachedCanvasRect = this.canvasContainer.nativeElement.getBoundingClientRect();
 
