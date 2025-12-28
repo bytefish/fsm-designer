@@ -374,20 +374,18 @@ interface GraphData {
                                 placeholder="Event name">
                         </div>
 
-
-                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                            <!-- Helper for Straight Lines -->
-                             @if (!isSelfLoop(link)) {
-                        <label class="flex items-center gap-3 p-3 rounded bg-slate-50 border border-slate-100 hover:bg-slate-100 cursor-pointer">
-                            <input type="checkbox"
-                              [checked]="isLinkStraight(link)"
-                              (change)="recordSnapshot(); toggleLinkStraight(link, $event); commitSnapshot()"
-                              class="w-5 h-5 text-red-600 rounded border-slate-300 focus:ring-red-500">
-                            <span class="text-sm font-medium text-slate-700">Straight Line</span>
-                        </label>
-                             }
-
-                            </div>
+                        <!-- Helper for Straight Lines -->
+                        @if (!isSelfLoop(link)) {
+                          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                            <label class="flex items-center gap-3 p-3 rounded bg-slate-50 border border-slate-100 hover:bg-slate-100 cursor-pointer">
+                                <input type="checkbox"
+                                  [checked]="isLinkStraight(link)"
+                                  (change)="recordSnapshot(); toggleLinkStraight(link, $event); commitSnapshot()"
+                                  class="w-5 h-5 text-red-600 rounded border-slate-300 focus:ring-red-500">
+                                <span class="text-sm font-medium text-slate-700">Straight Line</span>
+                            </label>
+                          </div>
+                        }
                     </div>
                 }
 
@@ -727,7 +725,6 @@ export class App {
     this.handleInteractionMove(event.clientX, event.clientY);
   }
 
-
   private handleInteractionDown(clientX: number, clientY: number) {
     this.cachedCanvasRect = this.canvasContainer.nativeElement.getBoundingClientRect();
     const wp = this.getWorldPointFromClient(clientX, clientY);
@@ -827,7 +824,7 @@ export class App {
             this.selectedLink.set(null);
             this.isSidebarOpen.set(false);
         }
-        // If dist > 5, it was a pan, so we keep selection (UX improvement)
+        // If dist > 5, it was a pan, so we keep selection
     }
 
     this.isDraggingNode = false;
