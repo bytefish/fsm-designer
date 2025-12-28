@@ -174,7 +174,9 @@ interface GraphData {
                             [attr.d]="getLinkPath(link)"
                             fill="none"
                             stroke="transparent"
-                            [attr.stroke-width]="24 / zoomLevel()"
+                            stroke-linecap="round"
+                            pointer-events="all"
+                            [attr.stroke-width]="60 / zoomLevel()"
                         />
                         <!-- Label -->
                       @if (getLabelPos(link); as pos) {
@@ -463,6 +465,7 @@ export class App {
   isLargeScreen = signal<boolean>(window.innerWidth >= 1024);
 
   nodeGrabOffset: Point = { x: 0, y: 0 };
+  panStartPos: Point | null = null; // To differentiate click vs drag on background
   panLastPos: Point = { x: 0, y: 0 };
   linkGrabOffset: Point = { x: 0, y: 0 };
 
@@ -730,11 +733,10 @@ export class App {
     const wp = this.getWorldPointFromClient(clientX, clientY);
 
     // If user clicked empty space
-    this.selectedNode.set(null);
-    this.selectedLink.set(null);
     this.isSidebarOpen.set(false);
     this.isPanning = true;
     this.panLastPos = { x: clientX, y: clientY };
+    this.panStartPos = { x: clientX, y: clientY }; // Record start to check for click vs drag
   }
 
   private handleInteractionMove(clientX: number, clientY: number) {
@@ -813,11 +815,27 @@ export class App {
         this.commitSnapshot();
     }
 
+    // If we were panning (background interaction), and didn't move much (click), then deselect.
+    if (this.isPanning && this.panStartPos) {
+        const clientX = event.changedTouches ? event.changedTouches[0].clientX : event.clientX;
+        const clientY = event.changedTouches ? event.changedTouches[0].clientY : event.clientY;
+        const dist = Math.sqrt(Math.pow(clientX - this.panStartPos.x, 2) + Math.pow(clientY - this.panStartPos.y, 2));
+
+        // If movement is small (< 5px), treat as a CLICK on background -> Deselect
+        if (dist < 5) {
+            this.selectedNode.set(null);
+            this.selectedLink.set(null);
+            this.isSidebarOpen.set(false);
+        }
+        // If dist > 5, it was a pan, so we keep selection (UX improvement)
+    }
+
     this.isDraggingNode = false;
     this.isDraggingLineBody = false;
     this.isPanning = false;
     this.connectSourceId = null;
     this.tempLink.set(null);
+    this.panStartPos = null;
     this.updateData();
   }
 
