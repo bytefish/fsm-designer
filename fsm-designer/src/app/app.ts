@@ -39,11 +39,25 @@ interface GraphData {
   imports: [CommonModule, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-   <div class="flex flex-col fixed inset-0 h-[100dvh] w-screen bg-slate-50 font-sans selection:bg-blue-100 text-slate-800 select-none overflow-hidden touch-manipulation">
+    <div class="flex flex-col fixed inset-0 h-[100dvh] w-screen bg-slate-50 font-sans selection:bg-blue-100 text-slate-800 select-none overflow-hidden touch-manipulation">
+
       <!-- Toolbar -->
       <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 flex items-center justify-between shadow-sm z-[100] shrink-0 h-16 overflow-x-auto no-scrollbar">
-        <div class="flex items-center gap-3 md:gap-4 min-w-max">
-          <h1 class="text-lg md:text-xl font-bold text-indigo-700 tracking-tight mr-1 md:mr-2"></h1>
+
+      <div class="flex items-center gap-3 md:gap-4 min-w-max">
+
+            <!-- Mobile Toggle Sidebar -->
+             <div class="flex items-center gap-2">
+            <button (click)="isSidebarOpen.set(!isSidebarOpen())"
+                    class="lg:hidden p-1 rounded-lg border border-slate-300 h-9 min-w-[40px]"
+                    [class.bg-indigo-100]="!isSidebarOpen() && (selectedNode() || selectedLink())"
+                    [class.text-indigo-700]="!isSidebarOpen() && (selectedNode() || selectedLink())"
+                    [class.bg-slate-100]="!(!isSidebarOpen() && (selectedNode() || selectedLink()))"
+                    [class.text-slate-600]="!(!isSidebarOpen() && (selectedNode() || selectedLink()))">
+                <!-- Change icon based on state: Close(X) / Edit(Pencil) / Settings(Gear) -->
+                {{ isSidebarOpen() ? '✕' : (selectedNode() || selectedLink() ? '✏️' : '⚙️') }}
+            </button>
+             </div>
 
           <!-- State Actions Group -->
           <div class="flex items-center gap-2">
@@ -57,49 +71,43 @@ interface GraphData {
             </button>
           </div>
 
-          <div class="h-6 w-px bg-slate-200 mx-1"></div>
-
-          <!-- View Action -->
-          <button (click)="resetView()" class="btn-tool btn-outline-amber flex items-center gap-2">
-            <span class="text-lg leading-none">🏠</span> <span class="hidden sm:inline">Center</span>
-          </button>
-
-          <div class="h-6 w-px bg-slate-200 mx-1"></div>
-
           <!-- Mode Toggles -->
-          <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 h-9">
+          <div class="flex bg-slate-200/80 p-1 rounded-lg border border-slate-300 h-9">
             <button
-                class="px-3 rounded-md text-xs font-bold flex items-center gap-2 transition-all h-full"
-                [class.bg-white]="interactionMode() === 'select'"
-                [class.shadow-sm]="interactionMode() === 'select'"
-                [class.text-indigo-600]="interactionMode() === 'select'"
+                class="px-4 rounded-md text-xs font-bold flex items-center gap-2 transition-all duration-200 h-full"
+                [class.bg-indigo-600]="interactionMode() === 'select'"
+                [class.text-white]="interactionMode() === 'select'"
+                [class.shadow-md]="interactionMode() === 'select'"
+                [class.text-slate-600]="interactionMode() !== 'select'"
+                [class.hover:bg-slate-300]="interactionMode() !== 'select'"
                 (click)="setMode('select')">
-               ✋ <span class="hidden md:inline">Move</span>
+               ✋ <span>Move</span>
             </button>
             <button
-                class="px-3 rounded-md text-xs font-bold flex items-center gap-2 transition-all h-full"
-                [class.bg-indigo-50]="interactionMode() === 'connect'"
-                [class.text-indigo-700]="interactionMode() === 'connect'"
+                class="px-4 rounded-md text-xs font-bold flex items-center gap-2 transition-all duration-200 h-full"
+                [class.bg-indigo-600]="interactionMode() === 'connect'"
+                [class.text-white]="interactionMode() === 'connect'"
+                [class.shadow-md]="interactionMode() === 'connect'"
+                [class.text-slate-600]="interactionMode() !== 'connect'"
+                [class.hover:bg-slate-300]="interactionMode() !== 'connect'"
                 (click)="setMode('connect')">
-               🔗 <span class="hidden md:inline">Connect</span>
+               🔗 <span>Connect</span>
             </button>
           </div>
 
-          <!-- Zoom Controls -->
-             <div class="flex items-center bg-white p-1 rounded-xl border-2 border-slate-200 gap-1 h-10 md:h-12 shadow-sm">
-                <button (click)="zoomOut()" class="w-8 md:w-10 h-full flex items-center justify-center hover:bg-slate-50 rounded-lg font-bold text-slate-600 text-lg">-</button>
-                <span class="text-xs font-black w-8 md:w-12 text-center text-slate-800">{{ zoomPercent() }}%</span>
-                <button (click)="zoomIn()" class="w-8 md:w-10 h-full flex items-center justify-center hover:bg-slate-50 rounded-lg font-bold text-slate-600 text-lg">+</button>
-             </div>
-        </div>
+          <!-- View Action -->
 
-        <div class="flex gap-2 items-center ml-4">
-            <!-- Mobile Toggle Sidebar -->
-            <button (click)="isSidebarOpen.set(!isSidebarOpen())"
-                    class="lg:hidden p-2 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
-                {{ isSidebarOpen() ? '✕' : '⚙️' }}
-            </button>
-            <span class="text-[10px] text-slate-400 font-medium uppercase tracking-widest hidden xl:block">FSM Editor</span>
+
+          <!-- Zoom Controls (White Box Style) -->
+          <div class="flex items-center bg-white p-1 rounded-lg border-1 border-slate-200 gap-1 h-9">
+            <button (click)="zoomOut()" class="w-8 h-full flex items-center justify-center hover:bg-slate-50 rounded-md font-bold text-slate-600 text-lg leading-none">-</button>
+            <span class="text-[10px] font-black w-10 text-center text-slate-800">{{ zoomPercent() }}%</span>
+            <button (click)="zoomIn()" class="w-8 h-full flex items-center justify-center hover:bg-slate-50 rounded-md font-bold text-slate-600 text-lg leading-none">+</button>
+          </div>
+
+        <button (click)="resetView()" class="btn-tool btn-outline-amber flex items-center gap-2">
+            <span class="text-lg leading-none">🏠</span> <span class="hidden sm:inline">Center</span>
+          </button>
         </div>
       </header>
 
@@ -150,7 +158,10 @@ interface GraphData {
                     [attr.marker-end]="selectedLink()?.id === link.id ? 'url(#arrowhead-selected)' : 'url(#arrowhead)'"
                     />
 
-                    <g class="cursor-move" (mousedown)="startDragLine(link, $event)" (touchstart)="startDragLine(link, $event)">
+                    <g class="cursor-move"
+                       (mousedown)="startDragLine(link, $event)"
+                       (touchstart)="startDragLine(link, $event)"
+                       (dblclick)="onLinkDoubleClick(link, $event)">
                         <path
                             [attr.d]="getLinkPath(link)"
                             fill="none"
@@ -218,7 +229,8 @@ interface GraphData {
                 [class.bg-white]="!node.isStart && !node.isEnd"
                 [class.z-40]="selectedNode()?.id === node.id"
                 (mousedown)="onNodeMouseDown(node, $event)"
-                (touchstart)="onNodeMouseDown(node, $event)">
+                (touchstart)="onNodeMouseDown(node, $event)"
+                (dblclick)="onNodeDoubleClick(node, $event)">
 
             <div class="text-[11px] font-bold text-center break-words overflow-hidden px-2 py-1 max-w-full leading-tight pointer-events-none">
                 {{ node.label }}
@@ -343,7 +355,7 @@ interface GraphData {
     </div>
   `,
   styles: [`
-     @reference 'tailwindcss';
+    @reference 'tailwindcss';
 
     .btn-tool { @apply h-9 px-4 rounded-md text-xs font-bold transition-all border active:scale-95 flex items-center justify-center min-w-max; }
     .btn-outline-indigo { @apply border-indigo-600 bg-indigo-50 text-indigo-700 hover:bg-indigo-100; }
@@ -634,8 +646,9 @@ export class App {
       this.selectedLink.set(null);
       this.isDraggingNode = true;
       this.nodeGrabOffset = { x: wp.x - node.x, y: wp.y - node.y };
-      // Auto open sidebar on select (mobile friendly)
-      if (!this.isLargeScreen()) this.isSidebarOpen.set(true);
+
+      // FIX: Removed auto-open sidebar logic here
+      // Manual open via button or double click instead
     }
   }
 
@@ -660,8 +673,21 @@ export class App {
         const midY = 0.25 * s.y + 0.5 * link.controlPoint.y + 0.25 * t.y;
         this.linkGrabOffset = { x: midX - wp.x, y: midY - wp.y };
     }
-    // Auto open sidebar on select (mobile friendly)
-    if (!this.isLargeScreen()) this.isSidebarOpen.set(true);
+
+    // FIX: Removed auto-open sidebar logic here
+  }
+
+  // Double click handlers for direct edit access
+  onNodeDoubleClick(node: FsmNode, event: any) {
+    event.preventDefault(); event.stopPropagation();
+    this.selectedNode.set(node);
+    this.isSidebarOpen.set(true);
+  }
+
+  onLinkDoubleClick(link: FsmLink, event: any) {
+    event.preventDefault(); event.stopPropagation();
+    this.selectedLink.set(link);
+    this.isSidebarOpen.set(true);
   }
 
   // --- Geometry ---
