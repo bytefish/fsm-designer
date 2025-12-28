@@ -136,6 +136,7 @@ interface GraphData {
              (mousemove)="onCanvasMouseMove($event)"
              (touchstart)="onTouchStart($event)"
              (touchmove)="onTouchMove($event)"
+             (touchend)="onTouchEnd($event)"
              (wheel)="onWheel($event)"
              (dragstart)="$event.preventDefault()">
 
@@ -434,6 +435,10 @@ export class App {
   zoomPercent = computed(() => Math.round(this.zoomLevel() * 100));
   jsonString = computed(() => JSON.stringify({ nodes: this.nodes(), links: this.links() }, null, 2));
 
+    // --- Pinch to Zoom State ---
+  initialPinchDistance = 0;
+  initialZoomLevel = 1;
+
   // --- History ---
   historyPast: GraphData[] = [];
   historyFuture: GraphData[] = [];
@@ -637,18 +642,53 @@ export class App {
   // --- Interaction Logic ---
 
   onTouchStart(event: TouchEvent) {
+        if (event.touches.length === 2) {
+        // Pinch to zoom start
+        event.preventDefault(); // Stop default browser zoom
+
+        this.initialPinchDistance = Math.hypot(
+            event.touches[0].clientX - event.touches[1].clientX,
+            event.touches[0].clientY - event.touches[1].clientY
+        );
+
+        this.initialZoomLevel = this.zoomLevel();
+
+        return;
+    }
     if (event.touches.length > 1) return;
     const touch = event.touches[0];
     this.handleInteractionDown(touch.clientX, touch.clientY);
   }
 
   onTouchMove(event: TouchEvent) {
+        if (event.touches.length === 2) {
+        // Pinch logic
+        event.preventDefault();
+        const dist = Math.hypot(
+            event.touches[0].clientX - event.touches[1].clientX,
+            event.touches[0].clientY - event.touches[1].clientY
+        );
+        if (this.initialPinchDistance > 0) {
+            const scale = dist / this.initialPinchDistance;
+            // Limit zoom scale
+            const newZoom = Math.min(5, Math.max(0.05, this.initialZoomLevel * scale));
+            this.zoomLevel.set(newZoom);
+        }
+        return;
+    }
+
     if (event.touches.length > 1) return;
     const touch = event.touches[0];
     if (this.isDraggingNode || this.isDraggingLineBody || this.isPanning || this.connectSourceId) {
         event.preventDefault(); // Stop mobile scrolling while interacting
     }
     this.handleInteractionMove(touch.clientX, touch.clientY);
+  }
+
+
+  onTouchEnd(event: TouchEvent) {
+      this.initialPinchDistance = 0; // Reset pinch
+      this.onGlobalInteractionUp(event);
   }
 
   onCanvasMouseDown(event: MouseEvent) {
