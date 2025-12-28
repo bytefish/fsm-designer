@@ -252,12 +252,12 @@ interface GraphData {
               </div>
              }
 
-        <!-- Floating Zoom Controls (Bottom Right) -->
-        <div class="absolute bottom-6 right-6 flex flex-col bg-white/90 backdrop-blur-sm border-2 border-slate-200 shadow-xl rounded-xl z-[80] overflow-hidden">
-            <button (click)="zoomIn()" class="w-10 h-10 flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xl border-b border-slate-100 transition-colors" title="Zoom In">+</button>
-            <button (click)="resetZoom()" class="w-10 h-10 flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 text-[10px] font-mono font-bold text-slate-500 border-b border-slate-100 transition-colors" title="Reset Zoom">{{ zoomPercent() }}%</button>
-            <button (click)="zoomOut()" class="w-10 h-10 flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xl transition-colors" title="Zoom Out">-</button>
-        </div>
+            <!-- Floating Zoom Controls (Desktop Only - hidden on mobile) -->
+            <div class="hidden md:flex absolute right-6 bottom-6 flex-col bg-white/90 backdrop-blur-sm border-2 border-slate-200 shadow-xl rounded-xl z-[80] overflow-hidden">
+                <button (click)="zoomIn()" class="w-10 h-10 flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xl border-b border-slate-100 transition-colors" title="Zoom In">+</button>
+                <button (click)="resetZoom()" class="w-10 h-10 flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 text-[10px] font-mono font-bold text-slate-500 border-b border-slate-100 transition-colors" title="Reset Zoom">{{ zoomPercent() }}%</button>
+                <button (click)="zoomOut()" class="w-10 h-10 flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xl transition-colors" title="Zoom Out">-</button>
+            </div>
 
         </div>
 
@@ -294,8 +294,8 @@ interface GraphData {
             </div>
 
             <div class="p-5 flex-grow overflow-y-auto space-y-6">
-
                 <div class="space-y-2 pb-4 border-b border-slate-100">
+
                     <div class="text-[10px] font-bold text-slate-400 uppercase mb-2">Project</div>
                     <button (click)="newDiagram()" class="w-full mb-2 px-3 py-2 bg-white border border-rose-200 text-rose-700 text-xs font-bold rounded hover:bg-rose-50 transition-colors flex items-center justify-center gap-2 shadow-sm">
                         <span>📄</span> New Diagram
@@ -399,6 +399,14 @@ interface GraphData {
                           placeholder="JSON data..."></textarea>
             </div>
 
+            <!-- Mobile Zoom Control (Sidebar Only) -->
+            <div class="md:hidden p-5">
+              <div class="md:hidden flex items-center justify-between m-2 bg-slate-100 rounded-lg p-1 border border-slate-200 mb-2">
+                  <button (click)="zoomOut()" class="w-10 h-8 flex items-center justify-center rounded bg-white shadow-sm text-slate-700 font-bold hover:bg-slate-50">-</button>
+                  <button (click)="resetZoom()" class="text-xs font-mono font-bold text-slate-600 px-2">{{ zoomPercent() }}%</button>
+                  <button (click)="zoomIn()" class="w-10 h-8 flex items-center justify-center rounded bg-white shadow-sm text-slate-700 font-bold hover:bg-slate-50">+</button>
+              </div>
+            </div>
         </aside>
       </div>
     </div>
