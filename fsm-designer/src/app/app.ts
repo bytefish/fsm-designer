@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, ChangeDetectionStrategy, HostListener, signal, computed } from '@angular/core';
+import { Component, ElementRef, ViewChild, ChangeDetectionStrategy, HostListener, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -296,6 +296,9 @@ interface GraphData {
 
                 <div class="space-y-2 pb-4 border-b border-slate-100">
                     <div class="text-[10px] font-bold text-slate-400 uppercase mb-2">Project</div>
+                    <button (click)="newDiagram()" class="w-full mb-2 px-3 py-2 bg-white border border-rose-200 text-rose-700 text-xs font-bold rounded hover:bg-rose-50 transition-colors flex items-center justify-center gap-2 shadow-sm">
+                        <span>📄</span> New Diagram
+                    </button>
                     <div class="grid grid-cols-2 gap-2">
                         <button (click)="saveToFile()" class="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700 transition-colors shadow-sm">
                             Save JSON
@@ -458,8 +461,34 @@ export class App {
   cachedCanvasRect: DOMRect | null = null;
 
   constructor() {
-    this.addNodeAt(200, 300, 'Initial\nState', true, false);
-    this.addNodeAt(550, 300, 'Final\nState', false, true);
+    // Try to load from Local Storage
+    const savedData = localStorage.getItem('fsm_db');
+    let loaded = false;
+
+    if (savedData) {
+        try {
+            const data = JSON.parse(savedData);
+            if (Array.isArray(data.nodes) && Array.isArray(data.links)) {
+                this.nodes.set(data.nodes);
+                this.links.set(data.links);
+                loaded = true;
+            }
+        } catch (e) {
+            console.warn('Could not parse local storage data', e);
+        }
+    }
+
+    // If nothing loaded, create default graph
+    if (!loaded) {
+        this.addNodeAt(200, 300, 'Initial\nState', true, false);
+        this.addNodeAt(550, 300, 'Final\nState', false, true);
+    }
+
+    // Setup Effect to auto-save whenever signals change
+    effect(() => {
+        const json = this.jsonString(); // Reactive dependency
+        localStorage.setItem('fsm_db', json);
+    });
   }
 
   @HostListener('window:resize')
@@ -475,6 +504,24 @@ export class App {
     this.nodes.set([...this.nodes()]);
     this.links.set([...this.links()]);
   }
+
+
+  newDiagram() {
+    this.pushState(this.getCurrentState()); // Save undo point
+
+    // Reset data
+    this.nodes.set([]);
+    this.links.set([]);
+    this.selectedNode.set(null);
+    this.selectedLink.set(null);
+
+    // Add default template
+    this.addNodeAt(200, 300, 'Initial\nState', true, false);
+    this.addNodeAt(550, 300, 'Final\nState', false, true);
+
+    this.resetView();
+  }
+
 
   onJsonManualChange(val: string) {
     this.recordSnapshot();
