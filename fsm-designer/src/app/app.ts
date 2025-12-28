@@ -44,10 +44,10 @@ interface GraphData {
       <!-- Toolbar -->
       <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 flex items-center justify-between shadow-sm z-[100] shrink-0 h-16 overflow-x-auto no-scrollbar">
 
-      <div class="flex items-center gap-3 md:gap-4 min-w-max">
+      <div class="flex items-center gap-1 md:gap-4 min-w-max">
 
             <!-- Mobile Toggle Sidebar -->
-             <div class="flex items-center gap-2">
+             <div class="flex items-center gap-1">
             <button (click)="isSidebarOpen.set(!isSidebarOpen())"
                     class="lg:hidden p-1 rounded-lg border border-slate-300 h-9 min-w-[40px]"
                     [class.bg-indigo-100]="!isSidebarOpen() && (selectedNode() || selectedLink())"
@@ -60,7 +60,7 @@ interface GraphData {
              </div>
 
           <!-- State Actions Group -->
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1">
             <button (click)="addNode()" class="btn-tool btn-outline-indigo flex items-center gap-2">
               <span class="text-lg leading-none">+</span> <span class="hidden sm:inline">Add State</span>
             </button>
@@ -74,7 +74,7 @@ interface GraphData {
           <!-- Mode Toggles -->
           <div class="hidden md:flex bg-slate-200/80 p-1 rounded-lg border border-slate-300 h-9">
             <button
-                class="px-4 rounded-md text-xs font-bold flex items-center gap-2 transition-all duration-200 h-full"
+                class="px-4 rounded-md text-xs font-bold flex items-center gap-1 transition-all duration-200 h-full"
                 [class.bg-indigo-600]="interactionMode() === 'select'"
                 [class.text-white]="interactionMode() === 'select'"
                 [class.shadow-md]="interactionMode() === 'select'"
@@ -84,7 +84,7 @@ interface GraphData {
                ✋ <span>Move</span>
             </button>
             <button
-                class="px-4 rounded-md text-xs font-bold flex items-center gap-2 transition-all duration-200 h-full"
+                class="px-4 rounded-md text-xs font-bold flex items-center gap-1 transition-all duration-200 h-full"
                 [class.bg-indigo-600]="interactionMode() === 'connect'"
                 [class.text-white]="interactionMode() === 'connect'"
                 [class.shadow-md]="interactionMode() === 'connect'"
