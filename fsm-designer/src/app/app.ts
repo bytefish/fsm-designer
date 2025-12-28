@@ -175,8 +175,8 @@ interface GraphData {
                             fill="none"
                             stroke="transparent"
                             stroke-linecap="round"
-                            pointer-events="all"
-                            [attr.stroke-width]="60 / zoomLevel()"
+                            pointer-events="stroke"
+                            [attr.stroke-width]="hitArea()"
                         />
                         <!-- Label -->
                       @if (getLabelPos(link); as pos) {
@@ -441,6 +441,7 @@ export class App {
   zoomLevel = signal<number>(1.0);
   isSidebarOpen = signal<boolean>(false);
 
+  hitArea = computed(() => Math.min(50, 60 / this.zoomLevel()));
   zoomPercent = computed(() => Math.round(this.zoomLevel() * 100));
   jsonString = computed(() => JSON.stringify({ nodes: this.nodes(), links: this.links() }, null, 2));
 
@@ -470,6 +471,7 @@ export class App {
   tempLink = signal<{ x1: number, y1: number, x2: number, y2: number } | null>(null);
   connectSourceId: string | null = null;
   cachedCanvasRect: DOMRect | null = null;
+  Math = Math;
 
   constructor() {
     // Try to load from Local Storage
