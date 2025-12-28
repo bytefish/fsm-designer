@@ -72,7 +72,7 @@ interface GraphData {
           </div>
 
           <!-- Mode Toggles -->
-          <div class="flex bg-slate-200/80 p-1 rounded-lg border border-slate-300 h-9">
+          <div class="hidden md:flex bg-slate-200/80 p-1 rounded-lg border border-slate-300 h-9">
             <button
                 class="px-4 rounded-md text-xs font-bold flex items-center gap-2 transition-all duration-200 h-full"
                 [class.bg-indigo-600]="interactionMode() === 'select'"
@@ -149,7 +149,8 @@ interface GraphData {
 
             <g [attr.transform]="'translate(' + viewOffset().x + ',' + viewOffset().y + ') scale(' + zoomLevel() + ')'">
                 <!-- LINKS -->
-                <g *ngFor="let link of links(); trackBy: trackById" class="pointer-events-auto">
+                 @for (link of links(); track link.id) {
+                <g class="pointer-events-auto">
                     <path
                     [attr.d]="getLinkPath(link)"
                     fill="none"
@@ -169,7 +170,8 @@ interface GraphData {
                             [attr.stroke-width]="24 / zoomLevel()"
                         />
                         <!-- Label -->
-                        <g *ngIf="getLabelPos(link) as pos">
+                      @if (getLabelPos(link); as pos) {
+                        <g>
                             <rect
                                 [attr.x]="pos.x - (link.label.length * 4) - 8"
                                 [attr.y]="pos.y - 12"
@@ -191,11 +193,14 @@ interface GraphData {
                             {{ link.label }}
                             </text>
                         </g>
+                      }
                     </g>
                 </g>
+              }
 
                 <!-- Temp Line -->
-                <line *ngIf="tempLink()"
+              @if (tempLink()) {
+                <line
                     [attr.x1]="tempLink()!.x1"
                     [attr.y1]="tempLink()!.y1"
                     [attr.x2]="tempLink()!.x2"
@@ -205,11 +210,13 @@ interface GraphData {
                     stroke-dasharray="5,5"
                     class="pointer-events-none"
                 />
+               }
             </g>
             </svg>
 
             <!-- NODES -->
-            <div *ngFor="let node of nodes(); trackBy: trackById"
+             @for (node of nodes(); track node.id) {
+            <div
                 class="absolute flex items-center justify-center rounded-full border-2 shadow-sm pointer-events-auto box-border transition-shadow"
                 [style.width.px]="node.size"
                 [style.height.px]="node.size"
@@ -236,7 +243,29 @@ interface GraphData {
                 {{ node.label }}
             </div>
             </div>
+             }
+        </div>
 
+        <!-- Mobile Floating Action Bar (Bottom Center) -->
+        <div class="md:hidden absolute bottom-6 left-1/2 transform -translate-x-1/2 z-[80] flex bg-white/90 backdrop-blur-sm p-1.5 rounded-2xl border-2 border-slate-200 shadow-xl gap-2">
+            <button
+                class="px-6 py-3 rounded-xl text-sm font-black flex items-center gap-2 transition-all shadow-sm"
+                [class.bg-indigo-600]="interactionMode() === 'select'"
+                [class.text-white]="interactionMode() === 'select'"
+                [class.bg-white]="interactionMode() !== 'select'"
+                [class.text-slate-500]="interactionMode() !== 'select'"
+                (click)="setMode('select')">
+               <span class="text-xl leading-none">✋</span> Move
+            </button>
+            <button
+                class="px-6 py-3 rounded-xl text-sm font-black flex items-center gap-2 transition-all shadow-sm"
+                [class.bg-indigo-600]="interactionMode() === 'connect'"
+                [class.text-white]="interactionMode() === 'connect'"
+                [class.bg-white]="interactionMode() !== 'connect'"
+                [class.text-slate-500]="interactionMode() !== 'connect'"
+                (click)="setMode('connect')">
+               <span class="text-xl leading-none">🔗</span> Connect
+            </button>
         </div>
 
         <!-- Sidebar (Drawer on mobile) -->
@@ -277,13 +306,15 @@ interface GraphData {
                     </div>
                 </div>
 
-                <div *ngIf="!selectedNode() && !selectedLink()" class="text-sm text-slate-400 italic text-center py-8">
+                @if (!selectedNode() && !selectedLink()) {
+                <div class="text-sm text-slate-400 italic text-center py-8">
                     <div class="mb-2 text-3xl opacity-50">✋</div>
                     Select an element to edit properties.
                 </div>
-
+                }
                 <!-- Node Properties -->
-                <div *ngIf="selectedNode() as node" class="space-y-4 animate-fadeIn">
+                 @if (selectedNode(); as node) {
+                <div class="space-y-4 animate-fadeIn">
                     <div>
                         <label class="block text-xs font-medium text-slate-700 mb-1">Label</label>
                         <textarea [(ngModel)]="node.label" (input)="updateData()"
@@ -314,31 +345,19 @@ interface GraphData {
                         </label>
                     </div>
                 </div>
+                 }
 
                 <!-- Link Properties -->
-                <div *ngIf="selectedLink() as link" class="space-y-6 animate-fadeIn">
+                 @if (selectedLink(); as link) {
+                  <div class="space-y-6 animate-fadeIn">
                     <div>
                         <label class="block text-xs font-medium text-slate-700 mb-1">Label</label>
                         <input type="text" [(ngModel)]="link.label" (input)="updateData()"
                                class="w-full px-3 py-4 md:py-2 bg-white border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                placeholder="Event name">
                     </div>
-
-                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                        <div class="flex justify-between mb-2">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                                {{ isSelfLoop(link) ? 'Loop Radius' : 'Curvature' }}
-                            </label>
-                            <span class="text-xs font-mono text-slate-500">{{ getSliderValue() }}</span>
-                        </div>
-                        <input type="range"
-                            [min]="getSliderMin()"
-                            [max]="getSliderMax()"
-                            [value]="getSliderValue()"
-                            (input)="onSliderChange($event)"
-                            class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-700">
-                    </div>
-                </div>
+                  </div>
+                  }
 
             </div>
 
