@@ -443,6 +443,15 @@ interface GraphData {
   styles: [`
     @reference 'tailwindcss';
 
+    *, *::before, *::after {
+       @apply touch-manipulation;
+    }
+
+    html, body {
+       @apply h-full w-full overflow-hidden overscroll-none bg-slate-50;
+       position: fixed;
+    }
+
     .btn-tool { @apply h-9 px-4 rounded-md text-xs font-bold transition-all border active:scale-95 flex items-center justify-center min-w-max; }
     .btn-outline-indigo { @apply border-indigo-600 bg-indigo-50 text-indigo-700 hover:bg-indigo-100; }
     .btn-outline-amber { @apply border-amber-600 bg-amber-50 text-amber-700 hover:bg-amber-100; }
@@ -453,10 +462,6 @@ interface GraphData {
     .animate-fadeIn { animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-    button, input, textarea, select, a {
-       @apply touch-manipulation;
-    }
   `]
 })
 export class App {
@@ -605,6 +610,24 @@ export class App {
 
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
     if (event.key === 'Delete' || event.key === 'Backspace') this.deleteSelected();
+  }
+
+  @HostListener('document:dblclick', ['$event'])
+  onGlobalDoubleClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+
+    // Allow default behavior (text selection) inside Inputs and Textareas
+    if (['INPUT', 'TEXTAREA'].includes(target.tagName)) {
+      return;
+    }
+
+    // Also allow behavior if the content is explicitly editable (contenteditable="true")
+    if (target.isContentEditable) {
+      return;
+    }
+
+    // For everything else (Sidebar background, Buttons, Canvas), block the Zoom.
+    event.preventDefault();
   }
 
   @HostListener('window:keyup', ['$event'])
