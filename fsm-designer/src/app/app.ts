@@ -386,6 +386,35 @@ interface GraphData {
                             </label>
                           </div>
                         }
+
+                        @if (isSelfLoop(link)) {
+                          <div class="mt-4 pt-4 border-t border-slate-100 animate-fadeIn">
+                            <div class="flex justify-between items-center mb-2">
+                              <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Loop Width</label>
+                              <span class="text-[10px] font-mono font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                                {{ getLoopSpreadDegrees(link) }}°
+                              </span>
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                              <span class="text-xs text-slate-400">Narrow</span>
+                              <input type="range"
+                                    min="10"
+                                    max="90"
+                                    step="5"
+                                    [ngModel]="getLoopSpreadDegrees(link)"
+                                    (ngModelChange)="setLoopSpreadDegrees(link, $event)"
+                                    (mousedown)="recordSnapshot()"
+                                    (mouseup)="commitSnapshot()"
+                                    class="flex-grow h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 hover:accent-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                              <span class="text-xs text-slate-400">Wide</span>
+                            </div>
+
+                            <p class="text-[10px] text-slate-400 mt-2 leading-tight">
+                              Adjust the spread angle of the self-reference loop.
+                            </p>
+                          </div>
+                        }
                     </div>
                 }
 
@@ -466,7 +495,9 @@ export class App {
   nodeGrabOffset: Point = { x: 0, y: 0 };
   panStartPos: Point | null = null; // To differentiate click vs drag on background
   panLastPos: Point = { x: 0, y: 0 };
-  linkGrabOffset: Point = { x: 0, y: 0 };
+
+  dragStartMouse: Point | null = null;     // Wo war die Maus beim Start?
+  dragStartLinkCP: Point | null = null;    // Wo war der Kontrollpunkt beim Start?
 
   tempLink = signal<{ x1: number, y1: number, x2: number, y2: number } | null>(null);
   connectSourceId: string | null = null;
@@ -496,12 +527,6 @@ export class App {
         this.addNodeAt(200, 300, 'Initial\nState', true, false);
         this.addNodeAt(550, 300, 'Final\nState', false, true);
     }
-
-    // Setup Effect to auto-save whenever signals change
-    effect(() => {
-        const json = this.jsonString(); // Reactive dependency
-        localStorage.setItem('fsm_db', json);
-    });
   }
 
   @HostListener('window:resize')
@@ -660,8 +685,12 @@ export class App {
   commitSnapshot() {
       if (!this.tempSnapshot) return;
       const current = this.getCurrentState();
-      if (JSON.stringify(this.tempSnapshot) !== JSON.stringify(current)) {
+      const tempJson = JSON.stringify(this.tempSnapshot);
+      const currentJson = JSON.stringify(current);
+
+      if (tempJson !== currentJson) {
           this.pushState(this.tempSnapshot);
+          localStorage.setItem('fsm_db', currentJson);
       }
       this.tempSnapshot = null;
   }
@@ -738,66 +767,114 @@ export class App {
     this.panStartPos = { x: clientX, y: clientY }; // Record start to check for click vs drag
   }
 
-  private handleInteractionMove(clientX: number, clientY: number) {
+private handleInteractionMove(clientX: number, clientY: number) {
+    // ---------------------------------------------------------
+    // 1. Panning
+    // ---------------------------------------------------------
     if (this.isPanning) {
-        const dx = clientX - this.panLastPos.x;
-        const dy = clientY - this.panLastPos.y;
-        this.viewOffset.update(v => ({ x: v.x + dx, y: v.y + dy }));
-        this.panLastPos = { x: clientX, y: clientY };
-        return;
+      const dx = clientX - this.panLastPos.x;
+      const dy = clientY - this.panLastPos.y;
+      this.viewOffset.update(v => ({ x: v.x + dx, y: v.y + dy }));
+      this.panLastPos = { x: clientX, y: clientY };
+      return;
     }
 
     const wp = this.getWorldPointFromClient(clientX, clientY);
 
+    // ---------------------------------------------------------
+    // 2. Node Dragging
+    // ---------------------------------------------------------
     if (this.isDraggingNode && this.selectedNode()) {
-        const node = this.selectedNode()!;
+      const node = this.selectedNode()!;
+      const newX = wp.x - this.nodeGrabOffset.x;
+      const newY = wp.y - this.nodeGrabOffset.y;
+      const dx = newX - node.x;
+      const dy = newY - node.y;
+      node.x = newX;
+      node.y = newY;
 
-        // Calculate new position
-        const newX = wp.x - this.nodeGrabOffset.x;
-        const newY = wp.y - this.nodeGrabOffset.y;
-
-        // Calculate delta
-        const dx = newX - node.x;
-        const dy = newY - node.y;
-
-        // Apply new position
-        node.x = newX;
-        node.y = newY;
-
-        // Update connected links
-        this.links().forEach(link => {
-            if (link.sourceId === node.id && link.targetId === node.id) {
-                 // Self-loop: Move control point exactly with node to maintain shape
-                 link.controlPoint.x += dx;
-                 link.controlPoint.y += dy;
-            } else if (link.sourceId === node.id || link.targetId === node.id) {
-                 // Normal link: Move control point by 50% to maintain nice curvature
-                 link.controlPoint.x += dx * 0.5;
-                 link.controlPoint.y += dy * 0.5;
-            }
-        });
-
-        this.updateData();
-    }
-
-    if (this.isDraggingLineBody && this.selectedLink()) {
-        const link = this.selectedLink()!;
-        if (this.isSelfLoop(link)) {
-            link.controlPoint.x = wp.x + this.linkGrabOffset.x;
-            link.controlPoint.y = wp.y + this.linkGrabOffset.y;
-        } else {
-            const s = this.nodes().find(n => n.id === link.sourceId), t = this.nodes().find(n => n.id === link.targetId);
-            if (s && t) {
-                link.controlPoint.x = 2 * (wp.x + this.linkGrabOffset.x) - (s.x + t.x) / 2;
-                link.controlPoint.y = 2 * (wp.y + this.linkGrabOffset.y) - (s.y + t.y) / 2;
-            }
+      // Move connected links along with the node
+      this.links().forEach(link => {
+        if (link.sourceId === node.id && link.targetId === node.id) {
+          link.controlPoint.x += dx;
+          link.controlPoint.y += dy;
+        } else if (link.sourceId === node.id || link.targetId === node.id) {
+          link.controlPoint.x += dx * 0.5;
+          link.controlPoint.y += dy * 0.5;
         }
-        this.updateData();
+      });
+      this.updateData();
+      return;
     }
 
-    if (this.connectSourceId) {
-        this.tempLink.set({ ...this.tempLink()!, x2: wp.x, y2: wp.y });
+    // ---------------------------------------------------------
+    // 3. Link Dragging (Robust Delta Logic + Mouse-To-Line Snap)
+    // ---------------------------------------------------------
+    if (this.isDraggingLineBody && this.selectedLink() && this.dragStartMouse && this.dragStartLinkCP) {
+      const link = this.selectedLink()!;
+
+      // Calculate how far the mouse has moved since the click (Delta)
+      const mouseDx = wp.x - this.dragStartMouse.x;
+      const mouseDy = wp.y - this.dragStartMouse.y;
+
+      if (this.isSelfLoop(link)) {
+        // For self-loops: 1:1 movement
+        link.controlPoint.x = this.dragStartLinkCP.x + mouseDx;
+        link.controlPoint.y = this.dragStartLinkCP.y + mouseDy;
+      } else {
+        const s = this.nodes().find(n => n.id === link.sourceId);
+        const t = this.nodes().find(n => n.id === link.targetId);
+
+        if (s && t) {
+          const midX = (s.x + t.x) / 2;
+          const midY = (s.y + t.y) / 2;
+
+          // For quadratic curves, we must move the control point twice as far as
+          // the mouse moves, so the peak visually follows the mouse cursor (Factor 2).
+          let newCpX = this.dragStartLinkCP.x + (mouseDx * 2);
+          let newCpY = this.dragStartLinkCP.y + (mouseDy * 2);
+
+          // Check distance from MOUSE to the straight LINE (S -> T)
+          // This is independent of the control point and works even close to the node
+          const distToStraightLine = this.getDistanceFromLine(wp.x, wp.y, s.x, s.y, t.x, t.y);
+
+          // If the mouse is closer than 15px to the direct connecting line -> Snap
+          if (distToStraightLine < 15) {
+            newCpX = midX;
+            newCpY = midY;
+          }
+
+          link.controlPoint.x = newCpX;
+          link.controlPoint.y = newCpY;
+        }
+      }
+      this.updateData();
+      return;
     }
+
+    // ---------------------------------------------------------
+    // 4. Create Connection (Connect Mode)
+    // ---------------------------------------------------------
+    if (this.connectSourceId) {
+      this.tempLink.set({ ...this.tempLink()!, x2: wp.x, y2: wp.y });
+    }
+  }
+
+  getDistanceFromLine(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number): number {
+    const numerator = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
+    const denominator = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
+    if (denominator === 0) return 0;
+    return numerator / denominator;
+  }
+
+  getLoopSpreadDegrees(link: FsmLink): number {
+    const rad = link.spread || (Math.PI / 6);
+    return Math.round(rad * (180 / Math.PI));
+  }
+
+  setLoopSpreadDegrees(link: FsmLink, degrees: number) {
+    link.spread = degrees * (Math.PI / 180);
+    this.updateData();
   }
 
   @HostListener('window:mouseup', ['$event'])
@@ -896,14 +973,17 @@ export class App {
     }
   }
 
-  startDragLine(link: FsmLink, event: any) {
-    event.preventDefault(); event.stopPropagation();
+startDragLine(link: FsmLink, event: any) {
+    event.preventDefault();
+    event.stopPropagation();
 
-    this.recordSnapshot(); // Start drag history snapshot
+    this.recordSnapshot();
     this.isSidebarOpen.set(false);
 
+    // Refresh canvas rect for precise world coordinates
     this.cachedCanvasRect = this.canvasContainer.nativeElement.getBoundingClientRect();
 
+    // Get mouse position in world coordinates
     const clientX = event.touches ? event.touches[0].clientX : event.clientX;
     const clientY = event.touches ? event.touches[0].clientY : event.clientY;
     const wp = this.getWorldPointFromClient(clientX, clientY);
@@ -912,15 +992,9 @@ export class App {
     this.selectedNode.set(null);
     this.isDraggingLineBody = true;
 
-    if (this.isSelfLoop(link)) {
-        this.linkGrabOffset = { x: link.controlPoint.x - wp.x, y: link.controlPoint.y - wp.y };
-    } else {
-        const s = this.nodes().find(n => n.id === link.sourceId), t = this.nodes().find(n => n.id === link.targetId);
-        if(!s || !t) return;
-        const midX = 0.25 * s.x + 0.5 * link.controlPoint.x + 0.25 * t.x;
-        const midY = 0.25 * s.y + 0.5 * link.controlPoint.y + 0.25 * t.y;
-        this.linkGrabOffset = { x: midX - wp.x, y: midY - wp.y };
-    }
+    // We record where the mouse and the control point were at the moment of the click.
+    this.dragStartMouse = { x: wp.x, y: wp.y };
+    this.dragStartLinkCP = { x: link.controlPoint.x, y: link.controlPoint.y };
   }
 
   // Double click handlers for direct edit access
@@ -990,8 +1064,8 @@ export class App {
 
     if (sId === tId) {
         // Self-loop: Standard curve upwards
-        controlPoint = { x: s.x, y: s.y - s.size * 1.5 };
-        spread = Math.PI / 4;
+        controlPoint = { x: s.x, y: s.y - (s.size / 2 + 50) };
+        spread = Math.PI / 6;
     } else {
         // Connection between two nodes: Straight line default (Midpoint)
         controlPoint = { x: (s.x + t.x) / 2, y: (s.y + t.y) / 2 };
