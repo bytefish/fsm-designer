@@ -61,12 +61,12 @@ interface GraphData {
 
           <!-- State Actions Group -->
           <div class="flex items-center gap-1">
-            <button (click)="addNode()" class="btn-tool btn-outline-indigo flex items-center gap-2">
+            <button (click)="addNode()" class="btn-tool btn-outline-indigo flex items-center gap-2 touch-manipulation">
               <span class="text-lg leading-none">+</span> <span class="hidden sm:inline">Add State</span>
             </button>
             <button (click)="deleteSelected()"
                     [disabled]="!selectedNode() && !selectedLink()"
-                    class="btn-tool btn-outline-rose flex items-center gap-2">
+                    class="btn-tool btn-outline-rose flex items-center gap-2 touch-manipulation">
               <span class="text-lg leading-none">🗑️</span> <span class="hidden sm:inline">Delete</span>
             </button>
           </div>
@@ -74,7 +74,7 @@ interface GraphData {
           <!-- Mode Toggles -->
           <div class="hidden md:flex bg-slate-200/80 p-1 rounded-lg border border-slate-300 h-9">
             <button
-                class="px-4 rounded-md text-xs font-bold flex items-center gap-1 transition-all duration-200 h-full"
+                class="px-4 rounded-md text-xs font-bold flex items-center gap-1 transition-all duration-200 h-full touch-manipulation"
                 [class.bg-indigo-600]="interactionMode() === 'select'"
                 [class.text-white]="interactionMode() === 'select'"
                 [class.shadow-md]="interactionMode() === 'select'"
@@ -84,7 +84,7 @@ interface GraphData {
                ✋ <span>Move</span>
             </button>
             <button
-                class="px-4 rounded-md text-xs font-bold flex items-center gap-1 transition-all duration-200 h-full"
+                class="px-4 rounded-md text-xs font-bold flex items-center gap-1 transition-all duration-200 h-full touch-manipulation"
                 [class.bg-indigo-600]="interactionMode() === 'connect'"
                 [class.text-white]="interactionMode() === 'connect'"
                 [class.shadow-md]="interactionMode() === 'connect'"
@@ -104,12 +104,12 @@ interface GraphData {
           <!-- Undo / Redo Group -->
           <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 h-9 mr-2">
             <button (click)="undo()" [disabled]="historyPast.length === 0"
-                    class="w-8 h-full flex items-center justify-center rounded hover:bg-white transition-colors text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent" title="Undo (Ctrl+Z)">
+                    class="w-8 h-full flex items-center justify-center rounded hover:bg-white transition-colors text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent touch-manipulation" title="Undo (Ctrl+Z)">
               ↩️
             </button>
             <div class="w-px h-4 bg-slate-300"></div>
             <button (click)="redo()" [disabled]="historyFuture.length === 0"
-                    class="w-8 h-full flex items-center justify-center rounded hover:bg-white transition-colors text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent" title="Redo (Ctrl+Y)">
+                    class="w-8 h-full flex items-center justify-center rounded hover:bg-white transition-colors text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent touch-manipulation" title="Redo (Ctrl+Y)">
               ↪️
             </button>
           </div>
@@ -453,6 +453,10 @@ interface GraphData {
     .animate-fadeIn { animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    button, input, textarea, select, a {
+       @apply touch-manipulation;
+    }
   `]
 })
 export class App {
