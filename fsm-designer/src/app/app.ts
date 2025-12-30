@@ -39,88 +39,250 @@ interface GraphData {
   imports: [CommonModule, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col fixed inset-0 h-[100dvh] w-screen bg-slate-50 font-sans selection:bg-blue-100 text-slate-800 select-none overflow-hidden touch-manipulation">
+<div class="flex flex-col fixed inset-0 h-[100dvh] w-screen bg-slate-50 font-sans selection:bg-blue-100 text-slate-800 select-none overflow-hidden touch-manipulation">
 
-      <!-- Toolbar -->
-      <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 flex items-center justify-between shadow-sm z-[100] shrink-0 h-16 overflow-x-auto no-scrollbar">
+      <div class="hidden md:block pointer-events-none fixed inset-0 z-[50]">
+        <div class="absolute bottom-8 right-8 pointer-events-auto">
+          <div class="bg-white/90 backdrop-blur-xl border border-white/40 px-2 py-1.5 rounded-full shadow-sm flex items-center gap-1 transition-transform hover:shadow-md">
 
-      <div class="flex items-center gap-1 md:gap-4 min-w-max">
-
-            <!-- Mobile Toggle Sidebar -->
-             <div class="flex items-center gap-1">
-            <button (click)="isSidebarOpen.set(!isSidebarOpen())"
-                    class="lg:hidden p-1 rounded-lg border border-slate-300 h-9 min-w-[40px]"
-                    [class.bg-indigo-100]="!isSidebarOpen() && (selectedNode() || selectedLink())"
-                    [class.text-indigo-700]="!isSidebarOpen() && (selectedNode() || selectedLink())"
-                    [class.bg-slate-100]="!(!isSidebarOpen() && (selectedNode() || selectedLink()))"
-                    [class.text-slate-600]="!(!isSidebarOpen() && (selectedNode() || selectedLink()))">
-                <!-- Change icon based on state: Close(X) / Edit(Pencil) / Settings(Gear) -->
-                {{ isSidebarOpen() ? '✕' : (selectedNode() || selectedLink() ? '✏️' : '⚙️') }}
+            <button (click)="zoomOut()" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             </button>
-             </div>
 
-          <!-- State Actions Group -->
-          <div class="flex items-center gap-1">
-            <button (click)="addNode()" class="btn-tool btn-outline-indigo flex items-center gap-2 touch-manipulation">
-              <span class="text-lg leading-none">+</span> <span class="hidden sm:inline">Add State</span>
+            <button (click)="resetView()" class="text-xs font-bold text-slate-500 w-12 text-center hover:text-indigo-600 transition-colors select-none tabular-nums" title="Reset to 100%">
+                {{ zoomPercent() }}%
             </button>
-            <button (click)="deleteSelected()"
-                    [disabled]="!selectedNode() && !selectedLink()"
-                    class="btn-tool btn-outline-rose flex items-center gap-2 touch-manipulation">
-              <span class="text-lg leading-none">🗑️</span> <span class="hidden sm:inline">Delete</span>
+
+            <button (click)="zoomIn()" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             </button>
           </div>
+        </div>
+        <div class="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto">
+          <div class="bg-white/90 backdrop-blur-xl border border-white/40 px-8 py-3 rounded-full shadow-sm flex items-center gap-8 group relative hover:shadow-md transition-all">
 
-          <!-- Mode Toggles -->
-          <div class="hidden md:flex bg-slate-200/80 p-1 rounded-lg border border-slate-300 h-9">
-            <button
-                class="px-4 rounded-md text-xs font-bold flex items-center gap-1 transition-all duration-200 h-full touch-manipulation"
-                [class.bg-indigo-600]="interactionMode() === 'select'"
-                [class.text-white]="interactionMode() === 'select'"
-                [class.shadow-md]="interactionMode() === 'select'"
-                [class.text-slate-600]="interactionMode() !== 'select'"
-                [class.hover:bg-slate-300]="interactionMode() !== 'select'"
-                (click)="setMode('select')">
-               ✋ <span>Move</span>
-            </button>
-            <button
-                class="px-4 rounded-md text-xs font-bold flex items-center gap-1 transition-all duration-200 h-full touch-manipulation"
-                [class.bg-indigo-600]="interactionMode() === 'connect'"
-                [class.text-white]="interactionMode() === 'connect'"
-                [class.shadow-md]="interactionMode() === 'connect'"
-                [class.text-slate-600]="interactionMode() !== 'connect'"
-                [class.hover:bg-slate-300]="interactionMode() !== 'connect'"
-                (click)="setMode('connect')">
-               🔗 <span>Connect</span>
-            </button>
-          </div>
+            <div class="cursor-pointer py-1">
+                <span class="text-sm font-bold tracking-widest text-slate-700 flex items-center gap-2">
+                fsm-designer<span class="text-[10px] opacity-40">▼</span>
+                </span>
 
-           <div class="flex items-center gap-1">
-              <button (click)="resetView()" class="btn-tool btn-outline-amber flex items-center gap-2">
-                <span class="text-lg leading-none">🏠</span> <span class="hidden sm:inline">Center</span>
-              </button>
+                <div class="absolute top-full left-0 mt-3 w-64 bg-white/95 backdrop-blur-2xl border border-slate-200 rounded-2xl shadow-2xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all transform origin-top translate-y-2 group-hover:translate-y-0">
+                    <button (click)="newDiagram()" class="w-full text-left px-4 py-3 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors tracking-wide">NEW DIAGRAM</button>
+                    <div class="h-px bg-slate-100 my-2"></div>
+                    <button (click)="saveToFile()" class="w-full text-left px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors tracking-wide">SAVE JSON</button>
+                    <button (click)="triggerFileInput()" class="w-full text-left px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors tracking-wide">LOAD JSON</button>
+                    <button (click)="exportFullSvg()" class="w-full text-left px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors tracking-wide">EXPORT SVG</button>
+                    <button (click)="exportFullPng()" class="w-full text-left px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors tracking-wide">EXPORT PNG</button>
+                </div>
             </div>
 
-          <!-- Undo / Redo Group -->
-          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 h-9 mr-2">
-            <button (click)="undo()" [disabled]="historyPast.length === 0"
-                    class="w-8 h-full flex items-center justify-center rounded hover:bg-white transition-colors text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent touch-manipulation" title="Undo (Ctrl+Z)">
-              ↩️
+            <div class="w-px h-5 bg-slate-300"></div>
+
+            <div class="flex gap-4">
+               <button (click)="undo()" [disabled]="!historyPast.length" class="text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors transform active:scale-90" title="Undo">
+                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h10a8 8 0 0 1 8 8v2c0-1.1-.9-2-2-2H7l4-4"/><path d="m7 14-4-4 4-4"/></svg>
+               </button>
+               <button (click)="redo()" [disabled]="!historyFuture.length" class="text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors transform active:scale-90" title="Redo">
+                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10H11a8 8 0 0 0-8 8v2c0-1.1.9-2 2-2h14l-4-4"/><path d="m17 14 4-4-4-4"/></svg>
+               </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="absolute top-1/2 left-8 -translate-y-1/2 flex flex-col gap-4 pointer-events-auto">
+          <div class="bg-white/80 backdrop-blur-md border border-white/40 p-3 rounded-2xl shadow-sm flex flex-col gap-3">
+
+            <button (click)="addNode()" title="Add Node" class="w-12 h-12 flex items-center justify-center bg-white border border-indigo-100 text-indigo-600 rounded-xl shadow-md hover:shadow-lg hover:border-indigo-200 hover:scale-105 active:scale-95 transition-all mb-2 group">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:rotate-90 transition-transform"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             </button>
-            <div class="w-px h-4 bg-slate-300"></div>
-            <button (click)="redo()" [disabled]="historyFuture.length === 0"
-                    class="w-8 h-full flex items-center justify-center rounded hover:bg-white transition-colors text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent touch-manipulation" title="Redo (Ctrl+Y)">
-              ↪️
+
+            <button (click)="setMode('select')" title="Move Mode" [class.bg-indigo-50]="interactionMode() === 'select'" [class.text-indigo-600]="interactionMode() === 'select'" class="w-12 h-12 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 transition-colors">
+              <span class="text-2xl">✋</span>
+            </button>
+            <button (click)="setMode('connect')" title="Connect Mode" [class.bg-indigo-50]="interactionMode() === 'connect'" [class.text-indigo-600]="interactionMode() === 'connect'" class="w-12 h-12 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 transition-colors">
+              <span class="text-2xl">🔗</span>
             </button>
           </div>
-
         </div>
-      </header>
 
-      <!-- Main Area -->
+        @if (selectedNode() || selectedLink()) {
+          <div class="absolute top-28 right-10 w-96 pointer-events-auto animate-fadeInRight">
+             <div class="bg-white/95 backdrop-blur-xl border border-white/50 rounded-[2rem] shadow-2xl p-8">
+
+                <div class="flex justify-between items-center mb-8">
+                   <h2 class="text-sm font-bold uppercase tracking-widest text-indigo-500">Properties</h2>
+                   <button (click)="selectedNode.set(null); selectedLink.set(null)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors text-lg">✕</button>
+                </div>
+
+                @if (selectedNode(); as node) {
+                  <div class="space-y-8">
+                    <div class="space-y-2">
+                      <label class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Label Name</label>
+                      <textarea [(ngModel)]="node.label" (input)="updateData()" (focus)="recordSnapshot()" (change)="commitSnapshot()"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-base font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none resize-none h-28 transition-all shadow-inner"></textarea>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Size: {{node.size}}px</label>
+                        <input type="range" min="60" max="200" [(ngModel)]="node.size" (input)="updateData()" (mousedown)="recordSnapshot()" (mouseup)="commitSnapshot()"
+                               class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                    </div>
+
+                    <div class="space-y-4 pt-6 border-t border-slate-100 mt-4">
+                       <label class="flex items-center gap-4 p-3 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 cursor-pointer group transition-all">
+                           <input type="checkbox" [(ngModel)]="node.isStart" (change)="updateData(); commitSnapshot()" (mousedown)="recordSnapshot()"
+                                  class="w-5 h-5 text-green-600 rounded border-slate-300 focus:ring-green-500 cursor-pointer">
+                           <span class="text-sm font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Initial State</span>
+                       </label>
+
+                       <label class="flex items-center gap-4 p-3 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 cursor-pointer group transition-all">
+                           <input type="checkbox" [(ngModel)]="node.isEnd" (change)="updateData(); commitSnapshot()" (mousedown)="recordSnapshot()"
+                                  class="w-5 h-5 text-red-600 rounded border-slate-300 focus:ring-red-500 cursor-pointer">
+                           <span class="text-sm font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Final State</span>
+                       </label>
+                    </div>
+
+                    <button (click)="deleteSelected()" class="w-full py-4 mt-4 text-rose-600 bg-white border border-rose-200 hover:border-rose-300 hover:bg-rose-50 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all shadow-sm active:scale-95">
+                        Delete Node
+                    </button>
+                  </div>
+                }
+
+                @if (selectedLink(); as link) {
+                   <div class="space-y-8">
+                      <div class="space-y-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Event Name</label>
+                        <input type="text" [(ngModel)]="link.label" (input)="updateData()" (focus)="recordSnapshot()" (change)="commitSnapshot()"
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-base font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-inner">
+                      </div>
+
+                      @if (isSelfLoop(link)) {
+                        <div class="space-y-2">
+                           <label class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Loop Width</label>
+                           <input type="range" min="10" max="90" [ngModel]="getLoopSpreadDegrees(link)" (ngModelChange)="setLoopSpreadDegrees(link, $event)"
+                                  class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                        </div>
+                      }
+
+                      <button (click)="deleteSelected()" class="w-full py-4 mt-4 text-rose-600 bg-white border border-rose-200 hover:border-rose-300 hover:bg-rose-50 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all shadow-sm active:scale-95">
+                        Delete Link
+                      </button>
+                   </div>
+                }
+             </div>
+          </div>
+        }
+      </div>
+
+    <div class="md:hidden pointer-events-none fixed inset-0 z-[50]">
+
+         <div class="absolute top-4 left-4 right-4 flex justify-between pointer-events-auto">
+             <button (click)="isSidebarOpen.set(true)" class="w-11 h-11 bg-white/90 backdrop-blur shadow-sm border border-slate-100 rounded-full flex items-center justify-center active:scale-95 text-xl text-slate-700">☰</button>
+             <div class="flex gap-2">
+                 <button (click)="undo()" [disabled]="!historyPast.length" class="w-11 h-11 bg-white/90 backdrop-blur shadow-sm border border-slate-100 rounded-full flex items-center justify-center disabled:opacity-50 active:scale-95 text-slate-600">↩️</button>
+                 <button (click)="redo()" [disabled]="!historyFuture.length" class="w-11 h-11 bg-white/90 backdrop-blur shadow-sm border border-slate-100 rounded-full flex items-center justify-center disabled:opacity-50 active:scale-95 text-slate-600">↪️</button>
+             </div>
+         </div>
+
+         <div class="absolute bottom-8 left-6 pointer-events-auto">
+             <button (click)="resetView()" class="w-14 h-14 bg-white/90 backdrop-blur shadow-lg border border-slate-100 rounded-2xl flex flex-col items-center justify-center active:scale-90 transition-transform">
+                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 mb-0.5"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="1"></circle></svg>
+                 <span class="text-[10px] font-bold text-slate-600 font-mono leading-none">{{ zoomPercent() }}%</span>
+             </button>
+         </div>
+
+         <div class="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto">
+            <div class="flex items-center bg-white/90 backdrop-blur shadow-lg border border-slate-100 rounded-full p-1.5">
+                <button (click)="setMode('select')" [class.bg-slate-800]="interactionMode() === 'select'" [class.text-white]="interactionMode() === 'select'" class="px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all text-slate-500">Move</button>
+                <button (click)="setMode('connect')" [class.bg-slate-800]="interactionMode() === 'connect'" [class.text-white]="interactionMode() === 'connect'" class="px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all text-slate-500">Link</button>
+            </div>
+         </div>
+
+         <div class="absolute bottom-8 right-6 pointer-events-auto">
+             <button (click)="addNode()" class="w-14 h-14 flex items-center justify-center bg-white border border-indigo-100 text-indigo-600 rounded-2xl shadow-xl shadow-indigo-500/10 active:scale-90 transition-all">
+                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+             </button>
+         </div>
+
+        <div class="fixed inset-0 z-[200] pointer-events-none" [class.pointer-events-auto]="isSidebarOpen()">
+            <div class="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300"
+                 [class.opacity-0]="!isSidebarOpen()" (click)="isSidebarOpen.set(false)"></div>
+
+            <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] p-8 shadow-2xl transition-transform duration-500 transform max-h-[90vh] overflow-y-auto"
+                 [class.translate-y-full]="!isSidebarOpen()">
+
+                 <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8"></div>
+
+                 <div class="space-y-4 pointer-events-auto">
+                    <button (click)="newDiagram(); isSidebarOpen.set(false)"
+                            class="w-full py-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-bold uppercase tracking-widest active:bg-rose-100 transition-colors shadow-sm border border-rose-100">
+                      New Diagram
+                    </button>
+
+                    <details class="group bg-slate-50 rounded-2xl overflow-hidden border border-slate-100">
+                        <summary class="flex items-center justify-between p-4 cursor-pointer list-none">
+                            <span class="text-xs font-bold uppercase text-slate-500 tracking-widest">Files & Export</span>
+                            <span class="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div class="p-4 pt-0 grid grid-cols-2 gap-3 animate-fadeIn">
+                            <button (click)="saveToFile()" class="py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 uppercase tracking-widest active:bg-slate-100">Save JSON</button>
+                            <button (click)="triggerFileInput()" class="py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 uppercase tracking-widest active:bg-slate-100">Load JSON</button>
+                            <button (click)="exportFullSvg()" class="py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 uppercase tracking-widest active:bg-slate-100">Export SVG</button>
+                            <button (click)="exportFullPng()" class="py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 uppercase tracking-widest active:bg-slate-100">Export SVG</button>
+                        </div>
+                    </details>
+                 </div>
+
+                 @if (selectedNode() || selectedLink()) {
+                    <div class="mt-8 pt-8 border-t border-slate-100 pointer-events-auto space-y-6">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold uppercase text-indigo-500 tracking-widest">Properties</h3>
+                            <button (click)="deleteSelected(); isSidebarOpen.set(false)" class="text-rose-500 text-[10px] font-black tracking-tighter uppercase">Delete Selected</button>
+                        </div>
+
+                        @if (selectedNode(); as node) {
+                           <div class="space-y-4">
+                              <textarea [(ngModel)]="node.label" (input)="updateData()" placeholder="Label name..."
+                                      class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-base font-medium text-slate-700 outline-none h-24"></textarea>
+
+
+                              <div class="flex gap-3">
+                                 <button (click)="node.isStart = !node.isStart; updateData()"
+                                         [class]="node.isStart ? 'bg-green-600 text-white border-green-600' : 'bg-white text-slate-400 border-slate-200'"
+                                         class="flex-grow py-3 border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all">
+                                    Initial
+                                 </button>
+                                 <button (click)="node.isEnd = !node.isEnd; updateData()"
+                                         [class]="node.isEnd ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-400 border-slate-200'"
+                                         class="flex-grow py-3 border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all">
+                                    Final
+                                 </button>
+                              </div>
+                           </div>
+                        }
+
+                        @if (selectedLink(); as link) {
+                           <div class="space-y-4">
+                              <input type="text" [(ngModel)]="link.label" (input)="updateData()" placeholder="Event name..."
+                                     class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-base font-medium text-slate-700 outline-none">
+
+                              @if (isSelfLoop(link)) {
+                                 <div class="p-4 bg-slate-50 rounded-2xl space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loop Width</label>
+                                    <input type="range" min="10" max="90" [ngModel]="getLoopSpreadDegrees(link)" (ngModelChange)="setLoopSpreadDegrees(link, $event)"
+                                           class="w-full h-2 bg-slate-200 rounded-lg appearance-none accent-indigo-600">
+                                 </div>
+                              }
+                           </div>
+                        }
+                    </div>
+                 }
+            </div>
+         </div>
+      </div>
+
       <div class="flex-grow flex overflow-hidden relative">
 
-        <!-- Canvas Area -->
         <div #canvasContainer
              class="flex-grow relative bg-slate-100 touch-none overflow-hidden shadow-inner select-none"
              [class.cursor-grab]="!isDraggingNode && !isDraggingLineBody && !connectSourceId && !isPanning"
@@ -133,311 +295,63 @@ interface GraphData {
              (wheel)="onWheel($event)"
              (dragstart)="$event.preventDefault()">
 
-            <!-- Grid Background -->
             <div class="absolute inset-0 opacity-[0.03] pointer-events-none"
                  [style.background-position]="viewOffset().x + 'px ' + viewOffset().y + 'px'"
                  [style.background-size]="(20 * zoomLevel()) + 'px ' + (20 * zoomLevel()) + 'px'"
                  style="background-image: radial-gradient(#000 1px, transparent 1px);">
             </div>
 
-            <!-- SVG Layer -->
-            <svg #svgElement class="w-full h-full absolute top-0 left-0 pointer-events-none overflow-visible"
-                 xmlns="http://www.w3.org/2000/svg">
+            <svg #svgElement class="w-full h-full absolute top-0 left-0 pointer-events-none overflow-visible" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <marker id="arrowhead" markerWidth="6" markerHeight="4"
-                        refX="5.5" refY="2" orient="auto" markerUnits="strokeWidth">
-                <path d="M0,0 L6,2 L0,4 Z" fill="#64748b" />
-                </marker>
-                <marker id="arrowhead-selected" markerWidth="6" markerHeight="4"
-                        refX="5.5" refY="2" orient="auto" markerUnits="strokeWidth">
-                <path d="M0,0 L6,2 L0,4 Z" fill="#3b82f6" />
-                </marker>
+                <marker id="arrowhead" markerWidth="6" markerHeight="4" refX="5.5" refY="2" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L6,2 L0,4 Z" fill="#64748b" /></marker>
+                <marker id="arrowhead-selected" markerWidth="6" markerHeight="4" refX="5.5" refY="2" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L6,2 L0,4 Z" fill="#3b82f6" /></marker>
             </defs>
 
             <g [attr.transform]="'translate(' + viewOffset().x + ',' + viewOffset().y + ') scale(' + zoomLevel() + ')'">
-                <!-- LINKS -->
-                 @for (link of links(); track link.id) {
+                @for (link of links(); track link.id) {
                 <g class="pointer-events-auto">
-                    <path
-                    [attr.d]="getLinkPath(link)"
-                    fill="none"
-                    [attr.stroke]="selectedLink()?.id === link.id ? '#3b82f6' : '#64748b'"
-                    [attr.stroke-width]="selectedLink()?.id === link.id ? 3 : 2"
-                    [attr.marker-end]="selectedLink()?.id === link.id ? 'url(#arrowhead-selected)' : 'url(#arrowhead)'"
-                    />
-
-                    <g class="cursor-move"
-                       (mousedown)="startDragLine(link, $event)"
-                       (touchstart)="startDragLine(link, $event)"
-                       (dblclick)="onLinkDoubleClick(link, $event)">
-                        <path
-                            [attr.d]="getLinkPath(link)"
-                            fill="none"
-                            stroke="transparent"
-                            stroke-linecap="round"
-                            pointer-events="stroke"
-                            [attr.stroke-width]="hitArea()"
-                        />
-                        <!-- Label -->
-                      @if (getLabelPos(link); as pos) {
+                    <path [attr.d]="getLinkPath(link)" fill="none" [attr.stroke]="selectedLink()?.id === link.id ? '#3b82f6' : '#64748b'" [attr.stroke-width]="selectedLink()?.id === link.id ? 3 : 2" [attr.marker-end]="selectedLink()?.id === link.id ? 'url(#arrowhead-selected)' : 'url(#arrowhead)'" />
+                    <g class="cursor-move" (mousedown)="startDragLine(link, $event)" (touchstart)="startDragLine(link, $event)" (dblclick)="onLinkDoubleClick(link, $event)">
+                        <path [attr.d]="getLinkPath(link)" fill="none" stroke="transparent" stroke-linecap="round" pointer-events="stroke" [attr.stroke-width]="hitArea()" />
+                        @if (getLabelPos(link); as pos) {
                         <g>
-                            <rect
-                                [attr.x]="pos.x - (link.label.length * 4) - 8"
-                                [attr.y]="pos.y - 12"
-                                [attr.width]="(link.label.length * 8) + 16"
-                                height="24"
-                                rx="6"
-                                fill="white"
-                                [attr.stroke]="selectedLink()?.id === link.id ? '#3b82f6' : '#cbd5e1'"
-                                [attr.stroke-width]="selectedLink()?.id === link.id ? 2 : 1"
-                                class="shadow-sm"
-                            />
-                            <text
-                            [attr.x]="pos.x"
-                            [attr.y]="pos.y"
-                            [attr.font-size]="12"
-                            text-anchor="middle"
-                            dominant-baseline="middle"
-                            class="font-bold fill-slate-700 select-none font-mono">
+                            <rect [attr.x]="pos.x - (link.label.length * 4) - 8" [attr.y]="pos.y - 12" [attr.width]="(link.label.length * 8) + 16" height="24" rx="6" fill="white" [attr.stroke]="selectedLink()?.id === link.id ? '#3b82f6' : '#cbd5e1'" [attr.stroke-width]="selectedLink()?.id === link.id ? 2 : 1" class="shadow-sm" />
+                            <text [attr.x]="pos.x" [attr.y]="pos.y" [attr.font-size]="12" text-anchor="middle" dominant-baseline="middle"
+                                  class="font-medium fill-slate-700 select-none font-sans tracking-wide">
                             {{ link.label }}
                             </text>
                         </g>
-                      }
+                        }
                     </g>
                 </g>
-              }
-
-                <!-- Temp Line -->
-              @if (tempLink()) {
-                <line
-                    [attr.x1]="tempLink()!.x1"
-                    [attr.y1]="tempLink()!.y1"
-                    [attr.x2]="tempLink()!.x2"
-                    [attr.y2]="tempLink()!.y2"
-                    stroke="#94a3b8"
-                    stroke-width="2"
-                    stroke-dasharray="5,5"
-                    class="pointer-events-none"
-                />
-               }
+                }
+                @if (tempLink()) { <line [attr.x1]="tempLink()!.x1" [attr.y1]="tempLink()!.y1" [attr.x2]="tempLink()!.x2" [attr.y2]="tempLink()!.y2" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,5" class="pointer-events-none" /> }
             </g>
             </svg>
 
-            <!-- NODES -->
-             @for (node of nodes(); track node.id) {
-            <div
-                class="absolute flex items-center justify-center rounded-full border-2 shadow-sm pointer-events-auto box-border transition-shadow"
-                [style.width.px]="node.size"
-                [style.height.px]="node.size"
+            @for (node of nodes(); track node.id) {
+            <div class="absolute flex items-center justify-center rounded-full border-2 shadow-sm pointer-events-auto box-border transition-shadow"
+                [style.width.px]="node.size" [style.height.px]="node.size"
                 [style.transform]="'translate(' + (node.x * zoomLevel() + viewOffset().x) + 'px,' + (node.y * zoomLevel() + viewOffset().y) + 'px) translate(-50%, -50%) scale(' + zoomLevel() + ')'"
                 [class.border-slate-600]="!node.isStart && !node.isEnd && selectedNode()?.id !== node.id"
-                [class.border-green-600]="node.isStart"
-                [class.bg-green-50]="node.isStart"
-                [class.text-green-800]="node.isStart"
-                [class.border-red-600]="node.isEnd"
-                [class.bg-red-50]="node.isEnd"
-                [class.text-red-800]="node.isEnd"
-                [class.border-double]="node.isEnd"
-                [class.border-4]="node.isEnd"
-                [class.ring-2]="selectedNode()?.id === node.id"
-                [class.ring-blue-500]="selectedNode()?.id === node.id"
-                [class.ring-offset-2]="selectedNode()?.id === node.id"
-                [class.bg-white]="!node.isStart && !node.isEnd"
-                [class.z-40]="selectedNode()?.id === node.id"
-                (mousedown)="onNodeMouseDown(node, $event)"
-                (touchstart)="onNodeMouseDown(node, $event)"
-                (dblclick)="onNodeDoubleClick(node, $event)">
+                [class.border-green-600]="node.isStart" [class.bg-green-50]="node.isStart" [class.text-green-800]="node.isStart"
+                [class.border-red-600]="node.isEnd" [class.bg-red-50]="node.isEnd" [class.text-red-800]="node.isEnd"
+                [class.border-double]="node.isEnd" [class.border-4]="node.isEnd"
+                [class.ring-2]="selectedNode()?.id === node.id" [class.ring-blue-500]="selectedNode()?.id === node.id" [class.ring-offset-2]="selectedNode()?.id === node.id"
+                [class.bg-white]="!node.isStart && !node.isEnd" [class.z-40]="selectedNode()?.id === node.id"
+                (mousedown)="onNodeMouseDown(node, $event)" (touchstart)="onNodeMouseDown(node, $event)" (dblclick)="onNodeDoubleClick(node, $event)">
 
-              <div class="text-[11px] font-bold text-center break-words overflow-hidden px-2 py-1 max-w-full leading-tight pointer-events-none">
-                  {{ node.label }}
-              </div>
-              </div>
-             }
-
-            <!-- Floating Zoom Controls (Desktop Only - hidden on mobile) -->
-            <div class="hidden md:flex absolute right-6 bottom-6 flex-col bg-white/90 backdrop-blur-sm border-2 border-slate-200 shadow-xl rounded-xl z-[80] overflow-hidden">
-                <button (click)="zoomIn()" class="w-10 h-10 flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xl border-b border-slate-100 transition-colors" title="Zoom In">+</button>
-                <button (click)="resetZoom()" class="w-10 h-10 flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 text-[10px] font-mono font-bold text-slate-500 border-b border-slate-100 transition-colors" title="Reset Zoom">{{ zoomPercent() }}%</button>
-                <button (click)="zoomOut()" class="w-10 h-10 flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xl transition-colors" title="Zoom Out">-</button>
+            <div class="text-sm font-medium text-center break-words overflow-hidden px-2 py-1 max-w-full leading-tight pointer-events-none text-slate-800">
+                {{ node.label }}
             </div>
+            </div>
+            }
 
         </div>
-
-        <!-- Mobile Floating Action Bar (Bottom Center) -->
-        <div class="md:hidden absolute bottom-6 left-1/2 transform -translate-x-1/2 z-[80] flex bg-white/90 backdrop-blur-sm p-1.5 rounded-2xl border-2 border-slate-200 shadow-xl gap-2">
-            <button
-                class="px-6 py-3 rounded-xl text-sm font-black flex items-center gap-2 transition-all shadow-sm"
-                [class.bg-indigo-600]="interactionMode() === 'select'"
-                [class.text-white]="interactionMode() === 'select'"
-                [class.bg-white]="interactionMode() !== 'select'"
-                [class.text-slate-500]="interactionMode() !== 'select'"
-                (click)="setMode('select')">
-               <span class="text-xl leading-none">✋</span> Move
-            </button>
-            <button
-                class="px-6 py-3 rounded-xl text-sm font-black flex items-center gap-2 transition-all shadow-sm"
-                [class.bg-indigo-600]="interactionMode() === 'connect'"
-                [class.text-white]="interactionMode() === 'connect'"
-                [class.bg-white]="interactionMode() !== 'connect'"
-                [class.text-slate-500]="interactionMode() !== 'connect'"
-                (click)="setMode('connect')">
-               <span class="text-xl leading-none">🔗</span> Connect
-            </button>
-        </div>
-
-        <!-- Sidebar (Drawer on mobile) -->
-        <aside class="fixed lg:static top-16 bottom-0 right-0 w-80 bg-white border-l border-slate-200 flex flex-col shadow-2xl lg:shadow-xl z-[90] transition-transform duration-300 transform"
-               [class.translate-x-full]="!isSidebarOpen() && !isLargeScreen()"
-               [class.translate-x-0]="isSidebarOpen() || isLargeScreen()">
-
-            <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Properties</h2>
-                <button (click)="isSidebarOpen.set(false)" class="lg:hidden text-slate-400 p-2">✕</button>
-            </div>
-
-            <div class="p-5 flex-grow overflow-y-auto space-y-6">
-                <div class="space-y-2 pb-4 border-b border-slate-100">
-
-                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-2">Project</div>
-                    <button (click)="newDiagram()" class="w-full mb-2 px-3 py-2 bg-white border border-rose-200 text-rose-700 text-xs font-bold rounded hover:bg-rose-50 transition-colors flex items-center justify-center gap-2 shadow-sm">
-                        <span>📄</span> New Diagram
-                    </button>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button (click)="saveToFile()" class="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700 transition-colors shadow-sm">
-                            Save JSON
-                        </button>
-                        <button (click)="triggerFileInput()" class="px-3 py-2 bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded hover:bg-slate-50 transition-colors shadow-sm">
-                            Load JSON
-                        </button>
-                    </div>
-
-                    <input #fileInput type="file" (change)="onFileSelected($event)" class="hidden" accept=".json">
-
-                    <div class="grid grid-cols-2 gap-2 mt-2">
-                        <button (click)="exportFullSvg()" class="px-3 py-2 bg-slate-800 text-white text-[10px] font-bold rounded hover:bg-slate-900 transition-colors shadow-sm">
-                            Export SVG
-                        </button>
-                        <button (click)="exportFullPng()" class="px-3 py-2 bg-slate-800 text-white text-[10px] font-bold rounded hover:bg-slate-900 transition-colors shadow-sm">
-                            Export PNG
-                        </button>
-                    </div>
-                </div>
-
-                @if (!selectedNode() && !selectedLink()) {
-                <div class="text-sm text-slate-400 italic text-center py-8">
-                    <div class="mb-2 text-3xl opacity-50">✋</div>
-                    Select an element to edit properties.
-                </div>
-                }
-                <!-- Node Properties -->
-                 @if (selectedNode(); as node) {
-                <div class="space-y-4 animate-fadeIn">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-700 mb-1">Label</label>
-                        <textarea [(ngModel)]="node.label" (input)="updateData()" (focus)="recordSnapshot()" (change)="commitSnapshot()"
-                               class="w-full h-20 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-                               placeholder="State name"></textarea>
-                    </div>
-
-                    <div>
-                        <div class="flex justify-between mb-1">
-                            <label class="block text-xs font-medium text-slate-700">Size</label>
-                            <span class="text-xs font-mono text-slate-500">{{node.size}}px</span>
-                        </div>
-                        <input type="range" min="60" max="250" [(ngModel)]="node.size" (input)="updateData()" (focus)="recordSnapshot()" (change)="commitSnapshot()"
-                               class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
-                    </div>
-
-                    <div class="space-y-3 pt-2">
-                        <label class="flex items-center gap-3 p-3 rounded bg-slate-50 border border-slate-100 hover:bg-slate-100 cursor-pointer">
-                            <input type="checkbox" [(ngModel)]="node.isStart" (change)="updateData(); commitSnapshot()" (mousedown)="recordSnapshot()"
-                                   class="w-5 h-5 text-green-600 rounded border-slate-300 focus:ring-green-500">
-                            <span class="text-sm font-medium text-slate-700">Initial State</span>
-                        </label>
-
-                        <label class="flex items-center gap-3 p-3 rounded bg-slate-50 border border-slate-100 hover:bg-slate-100 cursor-pointer">
-                            <input type="checkbox" [(ngModel)]="node.isEnd" (change)="updateData(); commitSnapshot()" (mousedown)="recordSnapshot()"
-                                   class="w-5 h-5 text-red-600 rounded border-slate-300 focus:ring-red-500">
-                            <span class="text-sm font-medium text-slate-700">Final State</span>
-                        </label>
-                    </div>
-                </div>
-                 }
-
-                <!-- Link Properties -->
-                @if (selectedLink(); as link) {
-                    <div class="space-y-6 animate-fadeIn">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">Label</label>
-                            <input type="text" [(ngModel)]="link.label" (input)="updateData()" (focus)="recordSnapshot()" (change)="commitSnapshot()"
-                                class="w-full px-3 py-4 md:py-2 bg-white border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                placeholder="Event name">
-                        </div>
-
-                        <!-- Helper for Straight Lines -->
-                        @if (!isSelfLoop(link)) {
-                          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                            <label class="flex items-center gap-3 p-3 rounded bg-slate-50 border border-slate-100 hover:bg-slate-100 cursor-pointer">
-                                <input type="checkbox"
-                                  [checked]="isLinkStraight(link)"
-                                  (change)="recordSnapshot(); toggleLinkStraight(link, $event); commitSnapshot()"
-                                  class="w-5 h-5 text-red-600 rounded border-slate-300 focus:ring-red-500">
-                                <span class="text-sm font-medium text-slate-700">Straight Line</span>
-                            </label>
-                          </div>
-                        }
-
-                        @if (isSelfLoop(link)) {
-                          <div class="mt-4 pt-4 border-t border-slate-100 animate-fadeIn">
-                            <div class="flex justify-between items-center mb-2">
-                              <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Loop Width</label>
-                              <span class="text-[10px] font-mono font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
-                                {{ getLoopSpreadDegrees(link) }}°
-                              </span>
-                            </div>
-
-                            <div class="flex items-center gap-3">
-                              <span class="text-xs text-slate-400">Narrow</span>
-                              <input type="range"
-                                    min="10"
-                                    max="90"
-                                    step="5"
-                                    [ngModel]="getLoopSpreadDegrees(link)"
-                                    (ngModelChange)="setLoopSpreadDegrees(link, $event)"
-                                    (mousedown)="recordSnapshot()"
-                                    (mouseup)="commitSnapshot()"
-                                    class="flex-grow h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 hover:accent-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
-                              <span class="text-xs text-slate-400">Wide</span>
-                            </div>
-
-                            <p class="text-[10px] text-slate-400 mt-2 leading-tight">
-                              Adjust the spread angle of the self-reference loop.
-                            </p>
-                          </div>
-                        }
-                    </div>
-                }
-
-            </div>
-
-            <!-- JSON Data (Hidden on small mobile) -->
-            <div class="border-t border-slate-200 bg-slate-50 p-4 shrink-0 hidden 2xl:block">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Raw Data (JSON)</h3>
-                <textarea [ngModel]="jsonString()" (ngModelChange)="onJsonManualChange($event)"
-                          class="w-full h-24 p-2 text-[9px] font-mono border border-slate-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 mb-1 bg-white"
-                          placeholder="JSON data..."></textarea>
-            </div>
-
-            <!-- Mobile Zoom Control (Sidebar Only) -->
-            <div class="md:hidden p-5">
-              <div class="md:hidden flex items-center justify-between m-2 bg-slate-100 rounded-lg p-1 border border-slate-200 mb-2">
-                  <button (click)="zoomOut()" class="w-10 h-8 flex items-center justify-center rounded bg-white shadow-sm text-slate-700 font-bold hover:bg-slate-50">-</button>
-                  <button (click)="resetZoom()" class="text-xs font-mono font-bold text-slate-600 px-2">{{ zoomPercent() }}%</button>
-                  <button (click)="zoomIn()" class="w-10 h-8 flex items-center justify-center rounded bg-white shadow-sm text-slate-700 font-bold hover:bg-slate-50">+</button>
-              </div>
-            </div>
-        </aside>
       </div>
+
+      <input #fileInput type="file" (change)="onFileSelected($event)" class="hidden" accept=".json">
+
     </div>
   `,
   styles: [`
@@ -452,16 +366,11 @@ interface GraphData {
        position: fixed;
     }
 
-    .btn-tool { @apply h-9 px-4 rounded-md text-xs font-bold transition-all border active:scale-95 flex items-center justify-center min-w-max; }
-    .btn-outline-indigo { @apply border-indigo-600 bg-indigo-50 text-indigo-700 hover:bg-indigo-100; }
-    .btn-outline-amber { @apply border-amber-600 bg-amber-50 text-amber-700 hover:bg-amber-100; }
-    .btn-outline-rose { @apply border-rose-600 bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-30 disabled:border-slate-300 disabled:bg-slate-50 disabled:text-slate-400 disabled:active:scale-100 disabled:cursor-not-allowed; }
-    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #4f46e5; margin-top: -4px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); cursor: pointer; }
-    input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; cursor: pointer; background: #e2e8f0; border-radius: 4px; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-    .animate-fadeIn { animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .animate-fadeInRight { animation: fadeInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+    * { @apply touch-manipulation; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #4f46e5; margin-top: -6px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); cursor: grab; border: 2px solid white; }
+    input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #e2e8f0; border-radius: 2px; }
   `]
 })
 export class App {
@@ -965,6 +874,8 @@ private handleInteractionMove(clientX: number, clientY: number) {
   }
 
   deleteSelected() {
+    this.recordSnapshot();
+
     const node = this.selectedNode(), link = this.selectedLink();
     if (node) {
       this.links.set(this.links().filter(l => l.sourceId !== node.id && l.targetId !== node.id));
@@ -976,6 +887,8 @@ private handleInteractionMove(clientX: number, clientY: number) {
     }
 
     this.isSidebarOpen.set(false);
+
+    this.commitSnapshot();
   }
 
   onNodeMouseDown(node: FsmNode, event: any) {
