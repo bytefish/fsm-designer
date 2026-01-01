@@ -557,8 +557,8 @@ export class App {
     this.zoomLevel.set(1);
 
     // Add default template
-    const startNode = this.createNode('Start', 200, 300, true, false);
-    const endNode = this.createNode('End', 600, 300, false, true);
+    const startNode = this.createNode('Start', 100, 300, true, false);
+    const endNode = this.createNode('End', 150, 300, false, true);
 
     // 3. Ins Modell pushen
     this.nodes.set([startNode, endNode]);
