@@ -380,7 +380,7 @@ interface GraphData {
                 @for (link of links(); track link.id) {
                 <g class="pointer-events-auto">
                     <path [attr.d]="getLinkPath(link)" fill="none" [attr.stroke]="selectedLink()?.id === link.id ? '#3b82f6' : '#64748b'" [attr.stroke-width]="selectedLink()?.id === link.id ? 3 : 2" [attr.marker-end]="selectedLink()?.id === link.id ? 'url(#arrowhead-selected)' : 'url(#arrowhead)'" />
-                    <g class="cursor-move" (mousedown)="startDragLine(link, $event)" (touchstart)="startDragLine(link, $event)" (dblclick)="onLinkDoubleClick(link, $event)">
+                    <g class="cursor-move" (mousedown)="startDragLine(link, $event)" (touchstart)="handleLinkTouch(link, $event)" (dblclick)="onLinkDoubleClick(link, $event)">
                         <path [attr.d]="getLinkPath(link)" fill="none" stroke="transparent" stroke-linecap="round" pointer-events="stroke" [attr.stroke-width]="hitArea()" />
                         @if (getLabelPos(link); as pos) {
                         <g>
@@ -408,7 +408,7 @@ interface GraphData {
                 [class.border-double]="node.isEnd" [class.border-4]="node.isEnd"
                 [class.ring-2]="selectedNode()?.id === node.id" [class.ring-blue-500]="selectedNode()?.id === node.id" [class.ring-offset-2]="selectedNode()?.id === node.id"
                 [class.bg-white]="!node.isStart && !node.isEnd" [class.z-40]="selectedNode()?.id === node.id"
-                (mousedown)="onNodeMouseDown(node, $event)" (touchstart)="onNodeMouseDown(node, $event)" (dblclick)="onNodeDoubleClick(node, $event)">
+                (mousedown)="onNodeMouseDown(node, $event)" (touchstart)="handleNodeTouch(node, $event)" (dblclick)="onNodeDoubleClick(node, $event)">
 
             <div class="text-sm font-medium text-center break-words overflow-hidden px-2 py-1 max-w-full leading-tight pointer-events-none text-slate-800">
                 {{ node.label }}
@@ -488,7 +488,7 @@ export class App {
   nodeGrabOffset: Point = { x: 0, y: 0 };
   panStartPos: Point | null = null; // To differentiate click vs drag on background
   panLastPos: Point = { x: 0, y: 0 };
-
+  lastTapTime: number = 0;
   dragStartMouse: Point | null = null;     // Wo war die Maus beim Start?
   dragStartLinkCP: Point | null = null;    // Wo war der Kontrollpunkt beim Start?
 
@@ -985,6 +985,39 @@ addNode() {
     this.isSidebarOpen.set(false);
 
     this.commitSnapshot();
+  }
+
+  handleNodeTouch(node: FsmNode, event: any) {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - this.lastTapTime;
+
+    if (tapLength < 300 && tapLength > 0) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      this.onNodeDoubleClick(node, event);
+
+    } else {
+      this.onNodeMouseDown(node, event);
+    }
+
+    this.lastTapTime = currentTime;
+  }
+
+  handleLinkTouch(link: FsmLink, event: any) {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - this.lastTapTime;
+
+    if (tapLength < 300 && tapLength > 0) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      this.onLinkDoubleClick(link, event);
+    } else {
+      this.startDragLine(link, event);
+    }
+
+    this.lastTapTime = currentTime;
   }
 
   onNodeMouseDown(node: FsmNode, event: any) {
