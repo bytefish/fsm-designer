@@ -558,7 +558,7 @@ export class App {
 
     // Add default template
     const startNode = this.createNode('Start', 100, 300, true, false);
-    const endNode = this.createNode('End', 150, 300, false, true);
+    const endNode = this.createNode('End', 250, 300, false, true);
 
     // 3. Ins Modell pushen
     this.nodes.set([startNode, endNode]);
