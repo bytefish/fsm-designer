@@ -86,6 +86,22 @@ interface GraphData {
                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10H11a8 8 0 0 0-8 8v2c0-1.1.9-2 2-2h14l-4-4"/><path d="m17 14 4-4-4-4"/></svg>
                </button>
             </div>
+            <div class="w-px h-5 bg-slate-300"></div>
+
+            <button (click)="deleteSelected()"
+                    [disabled]="!selectedNode() && !selectedLink()"
+                    class="p-2 rounded-xl transition-all flex items-center justify-center group"
+                    [class.text-rose-500]="selectedNode() || selectedLink()"
+                    [class.bg-rose-50]="selectedNode() || selectedLink()"
+                    [class.opacity-20]="!selectedNode() && !selectedLink()"
+                    [class.cursor-not-allowed]="!selectedNode() && !selectedLink()"
+                    title="Delete Selection (Del)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -174,13 +190,64 @@ interface GraphData {
         }
       </div>
 
-    <div class="md:hidden pointer-events-none fixed inset-0 z-[50]">
+<div class="md:hidden pointer-events-none fixed inset-0 z-[50]">
 
-         <div class="absolute top-4 left-4 right-4 flex justify-between pointer-events-auto">
-             <button (click)="isSidebarOpen.set(true)" class="w-11 h-11 bg-white/90 backdrop-blur shadow-sm border border-slate-100 rounded-full flex items-center justify-center active:scale-95 text-xl text-slate-700">☰</button>
-             <div class="flex gap-2">
-                 <button (click)="undo()" [disabled]="!historyPast.length" class="w-11 h-11 bg-white/90 backdrop-blur shadow-sm border border-slate-100 rounded-full flex items-center justify-center disabled:opacity-50 active:scale-95 text-slate-600">↩️</button>
-                 <button (click)="redo()" [disabled]="!historyFuture.length" class="w-11 h-11 bg-white/90 backdrop-blur shadow-sm border border-slate-100 rounded-full flex items-center justify-center disabled:opacity-50 active:scale-95 text-slate-600">↪️</button>
+         <div class="absolute top-4 left-4 right-4 flex justify-between pointer-events-auto items-start z-[60]">
+
+             <button (click)="isMenuOpen.set(true)" class="w-11 h-11 bg-white/90 backdrop-blur shadow-sm border border-slate-100 rounded-full flex items-center justify-center active:scale-95 text-xl text-slate-700">
+                 ☰
+             </button>
+
+             <div class="flex flex-col gap-3 items-end">
+                 <div class="flex gap-2">
+                     <button (click)="undo()" [disabled]="!historyPast.length" class="w-11 h-11 bg-white/90 backdrop-blur shadow-sm border border-slate-100 rounded-full flex items-center justify-center disabled:opacity-50 active:scale-95 text-slate-600">↩️</button>
+                     <button (click)="redo()" [disabled]="!historyFuture.length" class="w-11 h-11 bg-white/90 backdrop-blur shadow-sm border border-slate-100 rounded-full flex items-center justify-center disabled:opacity-50 active:scale-95 text-slate-600">↪️</button>
+                    <button (click)="deleteSelected()"
+                            [disabled]="!selectedNode() && !selectedLink()"
+                            class="w-11 h-11 backdrop-blur shadow-sm border rounded-full flex items-center justify-center transition-all duration-200 active:scale-95"
+
+                            [class.bg-white]="!selectedNode() && !selectedLink()"
+                            [class.border-slate-100]="!selectedNode() && !selectedLink()"
+                            [class.text-slate-300]="!selectedNode() && !selectedLink()"
+                            [class.opacity-50]="!selectedNode() && !selectedLink()"
+
+                            [class.bg-rose-50]="selectedNode() || selectedLink()"
+                            [class.border-rose-200]="selectedNode() || selectedLink()"
+                            [class.text-rose-600]="selectedNode() || selectedLink()"
+                            [class.shadow-md]="selectedNode() || selectedLink()">
+
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                 </div>
+
+             </div>
+         </div>
+
+         <div class="fixed inset-0 z-[300] pointer-events-auto transition-opacity duration-300"
+              [class.opacity-0]="!isMenuOpen()" [class.pointer-events-none]="!isMenuOpen()">
+             <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" (click)="isMenuOpen.set(false)"></div>
+             <div class="absolute top-20 left-6 right-6 bg-white rounded-3xl shadow-2xl p-6 transition-transform duration-300"
+                  [class.-translate-y-[150%]]="!isMenuOpen()" [class.translate-y-0]="isMenuOpen()">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400">Project Menu</h2>
+                    <button (click)="isMenuOpen.set(false)" class="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500">✕</button>
+                </div>
+                <div class="space-y-3">
+                    <button (click)="newDiagram(); isMenuOpen.set(false)" class="w-full py-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-bold uppercase tracking-widest active:bg-rose-100 border border-rose-100">New Diagram</button>
+                    <div class="h-px bg-slate-100 my-2"></div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button (click)="saveToFile()" class="py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 uppercase tracking-wide">Save JSON</button>
+                        <button (click)="triggerFileInput()" class="py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 uppercase tracking-wide">Load JSON</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                         <button (click)="exportFullSvg()" class="py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 uppercase tracking-wide">Export SVG</button>
+                         <button (click)="exportFullPng()" class="py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 uppercase tracking-wide">Export PNG</button>
+                    </div>
+                </div>
              </div>
          </div>
 
@@ -204,79 +271,81 @@ interface GraphData {
              </button>
          </div>
 
-        <div class="fixed inset-0 z-[200] pointer-events-none" [class.pointer-events-auto]="isSidebarOpen()">
-            <div class="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300"
-                 [class.opacity-0]="!isSidebarOpen()" (click)="isSidebarOpen.set(false)"></div>
+         <div class="fixed inset-x-0 bottom-0 z-[200] pointer-events-auto transition-transform duration-300 transform"
+              [class.translate-y-full]="!isSidebarOpen()"
+              [class.translate-y-0]="isSidebarOpen()">
 
-            <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] p-8 shadow-2xl transition-transform duration-500 transform max-h-[90vh] overflow-y-auto"
-                 [class.translate-y-full]="!isSidebarOpen()">
+            <div class="absolute -top-[100vh] inset-x-0 h-[100vh] bg-black/20 backdrop-blur-sm transition-opacity"
+                 [class.opacity-0]="!isSidebarOpen()"
+                 [class.pointer-events-none]="!isSidebarOpen()"
+                 (click)="isSidebarOpen.set(false)"></div>
 
-                 <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8"></div>
+            <div class="bg-white w-full rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] border-t border-slate-50 flex flex-col max-h-[85dvh]">
 
-                 <div class="space-y-4 pointer-events-auto">
-                    <button (click)="newDiagram(); isSidebarOpen.set(false)"
-                            class="w-full py-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-bold uppercase tracking-widest active:bg-rose-100 transition-colors shadow-sm border border-rose-100">
-                      New Diagram
-                    </button>
+                 <div class="flex-none bg-white rounded-t-[2rem] border-b border-slate-100 z-10 relative">
 
-                    <details class="group bg-slate-50 rounded-2xl overflow-hidden border border-slate-100">
-                        <summary class="flex items-center justify-between p-4 cursor-pointer list-none">
-                            <span class="text-xs font-bold uppercase text-slate-500 tracking-widest">Files & Export</span>
-                            <span class="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
-                        </summary>
-                        <div class="p-4 pt-0 grid grid-cols-2 gap-3 animate-fadeIn">
-                            <button (click)="saveToFile()" class="py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 uppercase tracking-widest active:bg-slate-100">Save JSON</button>
-                            <button (click)="triggerFileInput()" class="py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 uppercase tracking-widest active:bg-slate-100">Load JSON</button>
-                            <button (click)="exportFullSvg()" class="py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 uppercase tracking-widest active:bg-slate-100">Export SVG</button>
-                            <button (click)="exportFullPng()" class="py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 uppercase tracking-widest active:bg-slate-100">Export SVG</button>
-                        </div>
-                    </details>
+                     <div class="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-slate-200 rounded-full cursor-pointer" (click)="isSidebarOpen.set(false)"></div>
+
+                     <div class="flex items-center justify-between px-6 pt-6 pb-4">
+                         <h3 class="text-xs font-bold uppercase text-indigo-500 tracking-widest truncate pr-4">
+                            {{ selectedNode() ? 'Edit State' : (selectedLink() ? 'Edit Link' : 'Properties') }}
+                         </h3>
+
+                         <button (click)="isSidebarOpen.set(false)"
+                                 class="shrink-0 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wide transition-colors active:scale-95">
+                            Done
+                         </button>
+                     </div>
                  </div>
 
-                 @if (selectedNode() || selectedLink()) {
-                    <div class="mt-8 pt-8 border-t border-slate-100 pointer-events-auto space-y-6">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-xs font-bold uppercase text-indigo-500 tracking-widest">Properties</h3>
-                            <button (click)="deleteSelected(); isSidebarOpen.set(false)" class="text-rose-500 text-[10px] font-black tracking-tighter uppercase">Delete Selected</button>
-                        </div>
+                 <div class="flex-1 overflow-y-auto min-h-0 bg-white overscroll-contain">
+                     <div class="p-6 pb-12">
 
-                        @if (selectedNode(); as node) {
-                           <div class="space-y-4">
-                              <textarea [(ngModel)]="node.label" (input)="updateData()" placeholder="Label name..."
-                                      class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-base font-medium text-slate-700 outline-none h-24"></textarea>
+                         @if (selectedNode() || selectedLink()) {
+                            <div class="space-y-6">
 
+                                @if (selectedNode(); as node) {
+                                   <div class="space-y-6">
+                                      <div class="space-y-2">
+                                        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Label</label>
+                                        <textarea [(ngModel)]="node.label" (input)="updateData()"
+                                              class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-base font-medium text-slate-700 outline-none h-24 focus:border-indigo-300 transition-colors shrink-0"></textarea>
+                                      </div>
 
-                              <div class="flex gap-3">
-                                 <button (click)="node.isStart = !node.isStart; updateData()"
-                                         [class]="node.isStart ? 'bg-green-600 text-white border-green-600' : 'bg-white text-slate-400 border-slate-200'"
-                                         class="flex-grow py-3 border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all">
-                                    Initial
-                                 </button>
-                                 <button (click)="node.isEnd = !node.isEnd; updateData()"
-                                         [class]="node.isEnd ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-400 border-slate-200'"
-                                         class="flex-grow py-3 border rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all">
-                                    Final
-                                 </button>
-                              </div>
-                           </div>
-                        }
+                                      <div class="grid grid-cols-2 gap-4">
+                                         <label class="flex items-center gap-3 p-4 border border-slate-200 rounded-2xl active:bg-slate-50 transition-colors shrink-0">
+                                            <input type="checkbox" [(ngModel)]="node.isStart" (change)="updateData(); commitSnapshot()" class="w-6 h-6 text-green-600 rounded border-slate-300 focus:ring-green-500 shrink-0">
+                                            <span class="text-xs font-bold uppercase tracking-wide text-slate-600">Initial</span>
+                                         </label>
+                                         <label class="flex items-center gap-3 p-4 border border-slate-200 rounded-2xl active:bg-slate-50 transition-colors shrink-0">
+                                            <input type="checkbox" [(ngModel)]="node.isEnd" (change)="updateData(); commitSnapshot()" class="w-6 h-6 text-red-600 rounded border-slate-300 focus:ring-red-500 shrink-0">
+                                            <span class="text-xs font-bold uppercase tracking-wide text-slate-600">Final</span>
+                                         </label>
+                                      </div>
+                                   </div>
+                                }
 
-                        @if (selectedLink(); as link) {
-                           <div class="space-y-4">
-                              <input type="text" [(ngModel)]="link.label" (input)="updateData()" placeholder="Event name..."
-                                     class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-base font-medium text-slate-700 outline-none">
+                                @if (selectedLink(); as link) {
+                                   <div class="space-y-4">
+                                      <div class="space-y-2">
+                                        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Event Name</label>
+                                        <input type="text" [(ngModel)]="link.label" (input)="updateData()"
+                                             class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-base font-medium text-slate-700 outline-none focus:border-indigo-300 transition-colors shrink-0">
+                                      </div>
 
-                              @if (isSelfLoop(link)) {
-                                 <div class="p-4 bg-slate-50 rounded-2xl space-y-2">
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loop Width</label>
-                                    <input type="range" min="10" max="90" [ngModel]="getLoopSpreadDegrees(link)" (ngModelChange)="setLoopSpreadDegrees(link, $event)"
-                                           class="w-full h-2 bg-slate-200 rounded-lg appearance-none accent-indigo-600">
-                                 </div>
-                              }
-                           </div>
-                        }
-                    </div>
-                 }
+                                      @if (isSelfLoop(link)) {
+                                         <div class="p-5 bg-slate-50 rounded-2xl space-y-3 shrink-0">
+                                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loop Width</label>
+                                            <input type="range" min="10" max="90" [ngModel]="getLoopSpreadDegrees(link)" (ngModelChange)="setLoopSpreadDegrees(link, $event)"
+                                                   class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                                         </div>
+                                      }
+                                   </div>
+                                }
+                            </div>
+                         }
+                     </div>
+                 </div>
             </div>
          </div>
       </div>
@@ -371,6 +440,11 @@ interface GraphData {
     * { @apply touch-manipulation; }
     input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #4f46e5; margin-top: -6px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); cursor: grab; border: 2px solid white; }
     input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #e2e8f0; border-radius: 2px; }
+
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .animate-slideUp { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+    .animate-popIn { animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
   `]
 })
 export class App {
@@ -387,6 +461,7 @@ export class App {
   viewOffset = signal<Point>({ x: 0, y: 0 });
   zoomLevel = signal<number>(1.0);
   isSidebarOpen = signal<boolean>(false);
+  isMenuOpen = signal<boolean>(false);
 
   hitArea = computed(() => Math.min(50, 60 / this.zoomLevel()));
   zoomPercent = computed(() => Math.round(this.zoomLevel() * 100));
@@ -438,13 +513,21 @@ export class App {
         } catch (e) {
             console.warn('Could not parse local storage data', e);
         }
-    }
+      } else {
+        this.newDiagram();
+      }
+  }
 
-    // If nothing loaded, create default graph
-    if (!loaded) {
-        this.addNodeAt(200, 300, 'Initial\nState', true, false);
-        this.addNodeAt(550, 300, 'Final\nState', false, true);
-    }
+  private createNode(label: string, x: number, y: number, isStart = false, isEnd = false): FsmNode {
+    return {
+      id: crypto.randomUUID(),
+      x,
+      y,
+      size: 80,
+      label,
+      isStart,
+      isEnd
+    };
   }
 
   @HostListener('window:resize')
@@ -470,13 +553,20 @@ export class App {
     this.links.set([]);
     this.selectedNode.set(null);
     this.selectedLink.set(null);
-    this.isSidebarOpen.set(false);
+    this.viewOffset.set({ x: 0, y: 0 });
+    this.zoomLevel.set(1);
 
     // Add default template
-    this.addNodeAt(200, 300, 'Initial\nState', true, false);
-    this.addNodeAt(550, 300, 'Final\nState', false, true);
+    const startNode = this.createNode('Start', 200, 300, true, false);
+    const endNode = this.createNode('End', 600, 300, false, true);
 
-    this.resetView();
+    // 3. Ins Modell pushen
+    this.nodes.set([startNode, endNode]);
+
+    // 4. History zurücksetzen
+    this.historyPast = [];
+    this.historyFuture = [];
+    this.recordSnapshot();
   }
 
   onJsonManualChange(val: string) {
@@ -861,17 +951,23 @@ private handleInteractionMove(clientX: number, clientY: number) {
 
   setMode(mode: 'select' | 'connect') { this.interactionMode.set(mode); this.selectedNode.set(null); this.selectedLink.set(null); }
 
-  addNode() {
-    const rect = this.canvasContainer.nativeElement.getBoundingClientRect();
-    const x = (rect.width / 2 - this.viewOffset().x) / this.zoomLevel();
-    const y = (rect.height / 2 - this.viewOffset().y) / this.zoomLevel();
-    this.addNodeAt(x, y, 'New\nState');
-  }
+addNode() {
+  // Position berechnen
+  const x = (window.innerWidth / 2 - this.viewOffset().x) / this.zoomLevel();
+  const y = (window.innerHeight / 2 - this.viewOffset().y) / this.zoomLevel();
 
-  addNodeAt(x: number, y: number, label: string, isStart = false, isEnd = false) {
-    const id = crypto.randomUUID();
-    this.nodes.update(nodes => [...nodes, { id, x, y, size: 100, label, isStart, isEnd }]);
-  }
+  const newNode = this.createNode('New State', x, y);
+
+  this.nodes.update(n => [...n, newNode]);
+
+  // UI-Optimierung für den Workflow
+  this.setMode('select');
+  this.selectedNode.set(newNode);
+  this.selectedLink.set(null);
+
+  this.recordSnapshot();
+  this.commitSnapshot();
+}
 
   deleteSelected() {
     this.recordSnapshot();
